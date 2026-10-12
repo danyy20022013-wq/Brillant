@@ -1,116 +1,45 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:juego_brilliant/tablero.dart';
 import 'package:juego_brilliant/tipo.dart';
-import 'package:juego_brilliant/validador_inicio.dart';
 import 'package:juego_brilliant/zona.dart';
 
+Tablero crearTablero() => const Tablero(id: 't1', zonas: [
+      Zona(id: 'azul', tipo: Tipo.azul, capacidad: 3),
+      Zona(id: 'rojo', tipo: Tipo.rojo, capacidad: 2),
+    ]);
+
 void main() {
-  group('Validador de inicio', () {
-    test('Bloquea el avance hasta configurar los valores iniciales', () {
-      final validador = ValidadorInicio();
-
-      expect(validador.validarAvance, throwsA(isA<StateError>()));
-
-      validador.marcarValoresInicialesConfigurados();
-      expect(validador.validarAvance, returnsNormally);
-    });
+  test('agrega un valor válido a una zona', () {
+    final tablero = crearTablero().agregarValor('azul', 4);
+    expect(tablero.zonaPorId('azul').valores, [4]);
   });
 
-  Tipo crearTipoVerde() {
-    return TipoVerde();
-  }
+  test('rechaza un valor que rompe la regla del tipo', () {
+    final tablero = crearTablero().agregarValor('rojo', 3).agregarValor('rojo', 3);
+    expect(tablero.zonaPorId('rojo').valores, [3]);
+  });
 
-  group('Pruebas del Tablero', () {
-    test('Verifica que el tablero mida 7x7 casillas', () {
-      final tablero = Tablero();
-      expect(Tablero.cantidadFilas, equals(7));
-      expect(Tablero.cantidadColumnas, equals(7));
-      expect(tablero.celdas, hasLength(49));
-    });
+  test('no acepta valores si la zona está completa', () {
+    final tablero =
+        crearTablero().agregarValor('rojo', 1).agregarValor('rojo', 2).agregarValor('rojo', 3);
+    expect(tablero.zonaPorId('rojo').valores, [1, 2]);
+  });
 
-    test('Guarda y lee correctamente un dato en las celdas', () {
-      final tablero = Tablero();
+  test('calcula el puntaje total', () {
+    final tablero = crearTablero().agregarValor('azul', 4).agregarValor('rojo', 1);
+    // azul con 1 valor = 10, rojo con 1 valor = 8
+    expect(tablero.puntajeTotal, 18);
+  });
 
-      tablero.colocarDato(0, 6, 9);
-      tablero.colocarDato(6, 0, 4);
-
-      expect(tablero.obtenerCelda(0, 6).valor, equals(9));
-      expect(tablero.obtenerCelda(6, 0).valor, equals(4));
-    });
-
-    test('Rechaza coordenadas fuera del tablero', () {
-      final tablero = Tablero();
-
-      expect(
-        () => tablero.obtenerCelda(7, 0),
-        throwsRangeError,
-      );
-    });
-    test('Extrae en orden de derecha a izquierda y arriba hacia abajo', () {
-      final tablero = Tablero();
-      final region = Zona(
-        id: 1,
-        tipo: crearTipoVerde(),
-        coordenadas: [tablero.obtenerCelda(0, 0)],
-      );
-
-      tablero.establecerValoresIniciales([region]);
-      tablero.colocarDato(0, 6, 1);
-      tablero.colocarDato(0, 5, 2);
-      tablero.colocarDato(1, 6, 3);
-
-      final resultado = tablero.extraerDatos();
-
-      expect(resultado[0], equals(1));
-      expect(resultado[1], equals(2));
-      expect(resultado[7], equals(3));
-    });
-
-    test('Bloquea la extracción si no se han proporcionado los valores iniciales', () {
-      final tablero = Tablero();
-
-      expect(
-        () => tablero.extraerDatos(),
-        throwsA(isA<StateError>()),
-      );
-    });
-
-    test('Permite guardar una región sin asignarla a cada celda individualmente', () {
-      final tablero = Tablero();
-      final region = Zona(
-        id: 1,
-        tipo: crearTipoVerde(),
-        coordenadas: [
-          tablero.obtenerCelda(0, 0),
-          tablero.obtenerCelda(0, 1),
-        ],
-      );
-
-      tablero.agregarRegion(region);
-
-      expect(tablero.regiones, contains(region));
-      expect(tablero.obtenerCeldasDeRegion(region), hasLength(2));
-    });
-
-    test('No permite regiones con ids duplicados', () {
-      final tablero = Tablero();
-      final primera = Zona(
-        id: 1,
-        tipo: crearTipoVerde(),
-        coordenadas: [tablero.obtenerCelda(0, 0)],
-      );
-      final segunda = Zona(
-        id: 1,
-        tipo: crearTipoVerde(),
-        coordenadas: [tablero.obtenerCelda(1, 0)],
-      );
-
-      tablero.agregarRegion(primera);
-
-      expect(
-        () => tablero.agregarRegion(segunda),
-        throwsArgumentError,
-      );
-    });
+  test('estaCompleto es true cuando todas las zonas se llenan', () {
+    var tablero = crearTablero();
+    expect(tablero.estaCompleto, isFalse);
+    for (final v in [4, 4, 4]) {
+      tablero = tablero.agregarValor('azul', v);
+    }
+    for (final v in [1, 2]) {
+      tablero = tablero.agregarValor('rojo', v);
+    }
+    expect(tablero.estaCompleto, isTrue);
   });
 }

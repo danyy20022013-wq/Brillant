@@ -1,62 +1,89 @@
-enum TipoZona {
-  azul,
-  rojo,
-  verde,
-  amarillo,
-  morado,
+import 'package:flutter/material.dart';
+
+/// Tipo de zona del tablero. Cada tipo trae su color, su regla de
+/// colocación y su tabla de puntos.
+abstract class Tipo {
+  const Tipo();
+
+  static const Tipo rojo = TipoRojo();
+  static const Tipo amarillo = TipoAmarillo();
+  static const Tipo verde = TipoVerde();
+  static const Tipo azul = TipoAzul();
+  static const Tipo morado = TipoMorado();
+
+  Color get color;
+  String get descripcion;
+  Map<int, int> get puntuaciones;
+
+  /// true si [posible] se puede agregar a los [actuales] valores de la zona.
+  bool esPosibleAgregar(List<int> actuales, int posible);
 }
 
-class Tipo {
-  final TipoZona tipo;
-  final String color;
-  final String regla;
-  final int puntuacion;
+class TipoRojo extends Tipo {
+  const TipoRojo();
 
-  Tipo({
-    required this.tipo,
-    required this.color,
-    required this.regla,
-    required this.puntuacion,
-  });
+  @override
+  Color get color => const Color(0xFFE5484D);
+  @override
+  String get descripcion => 'Todos los números deben de ser distintos';
+  @override
+  Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) =>
+      !actuales.contains(posible);
+}
 
-  bool validarMovimiento(List<int> valores) {
-    switch (tipo) {
-      case TipoZona.azul:
-        if (valores.isEmpty) {
-          return true;
-        }
-        return valores.every((numero) => numero == valores.first);
+class TipoAmarillo extends Tipo {
+  const TipoAmarillo();
 
-      case TipoZona.rojo:
-        return valores.toSet().length == valores.length;
+  @override
+  Color get color => const Color(0xFFF5B83D);
+  @override
+  String get descripcion => 'Todos los números deben de ser distintos';
+  @override
+  Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) =>
+      !actuales.contains(posible);
+}
 
-      case TipoZona.verde:
-        return true;
+class TipoVerde extends Tipo {
+  const TipoVerde();
 
-      case TipoZona.amarillo:
-        return true;
+  @override
+  Color get color => const Color(0xFF3FB67A);
+  @override
+  String get descripcion => 'Se puede colocar cualquier número';
+  @override
+  Map<int, int> get puntuaciones => {1: 4, 2: 3, 3: 2};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) => true;
+}
 
-      case TipoZona.morado:
-        return valores.toSet().length <= 2;
-    }
-  }
+class TipoAzul extends Tipo {
+  const TipoAzul();
 
-  bool validarAmarillo(List<int> valores) {
-    if (tipo != TipoZona.amarillo) {
-      return false;
-    }
-    return valores.toSet().length == valores.length;
-  }
+  @override
+  Color get color => const Color(0xFF3E9BF0);
+  @override
+  String get descripcion => 'Todos los números deben de ser iguales';
+  @override
+  Map<int, int> get puntuaciones => {1: 10, 2: 8, 3: 6};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) =>
+      actuales.isEmpty || actuales.every((n) => n == posible);
+}
 
-  int calcularPuntuacion() {
-    return puntuacion;
-  }
+class TipoMorado extends Tipo {
+  const TipoMorado();
 
-  String obtenerInformacion() {
-    return '''
-Tipo: $color
-Regla: $regla
-Puntuación: $puntuacion
-''';
-  }
+  @override
+  Color get color => const Color(0xFF8E5CF0);
+  @override
+  String get descripcion => 'Máximo dos números diferentes por zona';
+  @override
+  Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) =>
+      {...actuales, posible}.length <= 2;
 }

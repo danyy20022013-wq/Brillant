@@ -1,85 +1,44 @@
+import 'package:equatable/equatable.dart';
+
 import 'zona.dart';
 
-class Tablero {
-  static const int cantidadFilas = 7;
-  static const int cantidadColumnas = 7;
+/// El tablero: reúne las zonas y aplica las reglas al colocar números.
+class Tablero extends Equatable {
+  final String id;
+  final List<Zona> zonas;
 
-  final List<List<Coordenada>> _matrizCeldas;
-  final List<Zona> _listaRegiones = [];
-  bool _valoresInicialesListos = false;
+  const Tablero({required this.id, required this.zonas});
 
-  Tablero()
-      : _matrizCeldas = List.generate(
-          cantidadFilas,
-          (f) => List.generate(
-            cantidadColumnas,
-            (c) => Coordenada(fila: f, columna: c),
-          ),
-        );
+  Zona zonaPorId(String zonaId) =>
+      zonas.firstWhere((zona) => zona.id == zonaId);
 
-  List<Zona> get regiones => List.unmodifiable(_listaRegiones);
-  List<Coordenada> get celdas {
-    final listaPlana = <Coordenada>[];
-    for (var fila in _matrizCeldas) {
-      listaPlana.addAll(fila);
+  bool get estaCompleto => zonas.every((zona) => zona.estaCompleta);
+
+  /// Suma los puntos de cada zona según cuántos números lleva.
+  int get puntajeTotal {
+    var total = 0;
+    for (final zona in zonas) {
+      total += zona.tipo.puntuaciones[zona.valores.length] ?? 0;
     }
-    return listaPlana;
+    return total;
   }
 
-  Coordenada obtenerCelda(int fila, int columna) {
-    if (fila < 0 || fila >= cantidadFilas || columna < 0 || columna >= cantidadColumnas) {
-      throw RangeError('Coordenada fuera de los límites del tablero.');
+  /// Agrega [valor] a la zona si cabe y cumple la regla de su tipo.
+  /// Si no se puede, devuelve el mismo tablero sin cambios.
+  Tablero agregarValor(String zonaId, int valor) {
+    final zona = zonaPorId(zonaId);
+    if (zona.estaCompleta || !zona.tipo.esPosibleAgregar(zona.valores, valor)) {
+      return this;
     }
-    return _matrizCeldas[fila][columna];
+    final nueva = zona.copyWith(valores: [...zona.valores, valor]);
+    return copyWith(
+      zonas: [for (final z in zonas) z.id == zonaId ? nueva : z],
+    );
   }
 
-  void colocarDato(int fila, int columna, int? valor) {
-    obtenerCelda(fila, columna).valor = valor;
-  }
+  Tablero copyWith({List<Zona>? zonas}) =>
+      Tablero(id: id, zonas: zonas ?? this.zonas);
 
-  void establecerValoresIniciales(List<Zona> regionesIniciales) {
-    for (var region in regionesIniciales) {
-      agregarRegion(region);
-    }
-    _valoresInicialesListos = true;
-  }
-
-  List<int?> extraerDatos() {
-    if (!_valoresInicialesListos) {
-      throw StateError('Bloqueo activo: No se puede avanzar hasta proporcionar los valores iniciales.');
-    }
-
-    final datosExtraidos = <int?>[];
-    for (var f = 0; f < cantidadFilas; f++) {
-      for (var c = cantidadColumnas - 1; c >= 0; c--) {
-        datosExtraidos.add(_matrizCeldas[f][c].valor);
-      }
-    }
-    return datosExtraidos;
-  }
-
-  void agregarRegion(Zona region) {
-    for (var pos in region.coordenadas) {
-      if (pos.fila < 0 || pos.fila >= cantidadFilas || pos.columna < 0 || pos.columna >= cantidadColumnas) {
-        throw RangeError('Coordenada de región fuera de los límites.');
-      }
-    }
-
-    final idExistente = _listaRegiones.any((element) => element.id == region.id);
-    if (idExistente) {
-      throw ArgumentError('Ya existe una región con el id ${region.id}.');
-    }
-
-    _listaRegiones.add(region);
-  }
-
-  List<Coordenada> obtenerCeldasDeRegion(Zona region) {
-    if (!_listaRegiones.contains(region)) {
-      throw ArgumentError('La región no pertenece a este tablero.');
-    }
-
-    return region.coordenadas
-        .map((coord) => obtenerCelda(coord.fila, coord.columna))
-        .toList();
-  }
+  @override
+  List<Object?> get props => [id, zonas];
 }

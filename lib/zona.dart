@@ -1,78 +1,33 @@
+import 'package:equatable/equatable.dart';
+
 import 'tipo.dart';
 
-class Coordenada {
-  final int fila;
-  final int columna;
-  int? valor;
-
-  Coordenada({
-    required this.fila,
-    required this.columna,
-    this.valor,
-  });
-}
-
-class Zona {
-  final int id;
-  final List<Coordenada> coordenadas;
+/// Un bloque del tablero con su tipo, su capacidad y los números
+/// que ya se colocaron (en orden).
+class Zona extends Equatable {
+  final String id;
   final Tipo tipo;
-  bool completado;
+  final int capacidad;
+  final List<int> valores;
 
-  Zona({
+  const Zona({
     required this.id,
-    required this.coordenadas,
     required this.tipo,
-    this.completado = false,
+    required this.capacidad,
+    this.valores = const [],
   });
 
-  int get tamanoZona {
-    return coordenadas.length;
-  }
+  bool get estaCompleta => valores.length >= capacidad;
 
-  List<int> obtenerValores() {
-    return coordenadas
-        .where((coordenada) => coordenada.valor != null)
-        .map((coordenada) => coordenada.valor!)
-        .toList();
-  }
-
-  void colocarNumero(int fila, int columna, int numero) {
-    for (var coordenada in coordenadas) {
-      if (coordenada.fila == fila && coordenada.columna == columna) {
-        coordenada.valor = numero;
-        return;
-      }
-    }
-    throw Exception(
-      'La coordenada ($fila, $columna) no pertenece a esta zona.',
+  Zona copyWith({List<int>? valores}) {
+    return Zona(
+      id: id,
+      tipo: tipo,
+      capacidad: capacidad,
+      valores: valores ?? this.valores,
     );
   }
 
-  bool contieneCoordenada(int fila, int columna) {
-    return coordenadas.any(
-      (coordenada) =>
-          coordenada.fila == fila && coordenada.columna == columna,
-    );
-  }
-
-  bool verificarCompletado() {
-    if (coordenadas.any((coordenada) => coordenada.valor == null)) {
-      completado = false;
-      return false;
-    }
-
-    final valores = obtenerValores();
-
-    if (!tipo.validarMovimiento(valores)) {
-      completado = false;
-      return false;
-    }
-
-    completado = true;
-    return true;
-  }
-
-  bool validarMovimiento() {
-    return tipo.validarMovimiento(obtenerValores());
-  }
+  @override
+  List<Object?> get props => [id, tipo, capacidad, valores];
 }
