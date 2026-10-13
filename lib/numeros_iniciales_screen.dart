@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'numeros_iniciales_cubit.dart';
 import 'tablero_layout.dart';
 import 'tipo.dart';
+import 'juego_screen.dart';
 
 const _fondo = Color(0xFF14162B);
 const _dorado = Color(0xFFFFD166);
@@ -71,7 +72,7 @@ class _Vista extends StatelessWidget {
                     height: 52,
                     child: FilledButton(
                       onPressed: estado.esValido
-                          ? () => _iniciar(context)
+                          ? () => _iniciar(context, estado)
                           : null,
                       child: const Text('Inicio'),
                     ),
@@ -85,11 +86,12 @@ class _Vista extends StatelessWidget {
     );
   }
 
-  void _iniciar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Números iniciales válidos. ¡A jugar!')),
-    );
-  }
+  void _iniciar(BuildContext context, NumerosInicialesEstado estado) {
+  final iniciales = estado.valores.whereType<int>().toList();
+  Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => JuegoScreen(iniciales: iniciales)),
+  );
+}
 }
 
 class _Grilla extends StatelessWidget {
