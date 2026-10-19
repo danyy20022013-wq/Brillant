@@ -50,7 +50,7 @@ void main() {
     );
   });
 
-  test('los puntos por llenado de cada color', () {
+  test('los puntos por orden de llenado de cada color', () {
     expect(puntosDe(Tipo.rojo), [6, 4, 2]);
     expect(puntosDe(Tipo.azul), [7, 5, 3]);
     expect(puntosDe(Tipo.verde), [4, 3, 2]);
@@ -65,7 +65,7 @@ void main() {
     expect(Juego.esSemilla(0, 2), isTrue);
     expect(Juego.esSemilla(0, 0), isFalse);
     expect(juego.valoresDeZona(azul1), [1]);
-    expect(juego.puntajeTotal, 0);
-    expect(juego.todasAgotadas, isFalse);
+    expect(juego.zonaLlena(azul1), isFalse);
+    expect(juego.estaLleno, isFalse);
   });
 }

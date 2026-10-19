@@ -3,6 +3,15 @@ import 'package:juego_brilliant/juego.dart';
 import 'package:juego_brilliant/juego_cubit.dart';
 import 'package:juego_brilliant/tipo.dart';
 
+const _iniciales = [1, 2, 3, 4, 5, 6];
+
+/// Un turno completo: dados 1 y 1, el 1 de ancla, y se coloca en (f, c).
+void _jugar(JuegoCubit cubit, int f, int c) {
+  cubit.fijarDados(1, 1);
+  cubit.elegirAncla(0);
+  cubit.colocar(f, c);
+}
+
 void main() {
   test('hay 9 zonas: 2 de cada color y 1 amarilla de 5 casillas', () {
     final zonas = estructuraNivel1.zonas;
@@ -21,68 +30,62 @@ void main() {
   });
 
   test('los números iniciales quedan en las estrellas', () {
-    final juego = Juego.inicial([1, 2, 3, 4, 5, 6]);
+    final juego = Juego.inicial(_iniciales);
     expect(juego.tablero[0][2], 1);
     expect(juego.tablero[1][5], 2);
     expect(juego.tablero[6][4], 6);
   });
 
   test('las jugadas son solo arriba, abajo, izquierda o derecha', () {
-    final juego = Juego.inicial([1, 2, 3, 4, 5, 6]);
+    final juego = Juego.inicial(_iniciales);
 
-    // El 5 junto al 1: el azul no deja (exige iguales), verde y morado sí.
     expect(
       juego.jugadasPosibles(ancla: 1, aColocar: 5),
       {(0, 1), (0, 3)},
     );
-    // El 1 junto al 1: ahora el azul sí lo deja.
     expect(
       juego.jugadasPosibles(ancla: 1, aColocar: 1),
       {(0, 1), (0, 3), (1, 2)},
     );
   });
 
-  test('una zona puntúa 7, 5 y 3 en el azul y luego ya no suma', () {
-    var juego = Juego.inicial([1, 2, 3, 4, 5, 6]);
-    final z = estructuraNivel1.indiceZona[0][2]; // zona azul 1
+  test('al llenar una zona ya no se vacía', () {
+    var juego = Juego.inicial(_iniciales);
+    final z = estructuraNivel1.indiceZona[0][2]; // azul 1
 
-    void llenar() {
-      juego = juego.colocar(1, 2, 1);
-      juego = juego.colocar(1, 3, 1);
-      juego = juego.colocar(2, 3, 1);
-    }
-
-    llenar();
-    expect(juego.puntos[z], 7);
-    expect(juego.completadas[z], 1);
-    expect(juego.tablero[1][2], isNull); // se vació para volver a llenar
-    expect(juego.tablero[0][2], 1); // la estrella se conserva
-
-    llenar();
-    expect(juego.puntos[z], 12);
-    llenar();
-    expect(juego.puntos[z], 15);
-    llenar();
-    expect(juego.puntos[z], 15);
-    expect(juego.completadas[z], 4);
+    expect(juego.zonaLlena(z), isFalse);
+    juego = juego.colocar(1, 2, 1).colocar(1, 3, 1).colocar(2, 3, 1);
+    expect(juego.zonaLlena(z), isTrue);
+    expect(juego.tablero[1][2], 1);
   });
 
-  test('las dos zonas del mismo color puntúan por separado', () {
-    var juego = Juego.inicial([1, 2, 3, 4, 5, 6]);
+  test('el puntaje depende del orden en que los jugadores llenan la zona', () {
+    final cubit = JuegoCubit(iniciales: List.filled(4, _iniciales));
     final azul1 = estructuraNivel1.indiceZona[0][2];
     final azul2 = estructuraNivel1.indiceZona[4][6];
 
-    juego = juego.colocar(1, 2, 1);
-    juego = juego.colocar(1, 3, 1);
-    juego = juego.colocar(2, 3, 1);
+    // Cada casilla la ponen los 4 jugadores en orden: J1 termina primero,
+    // luego J2, J3 y J4.
+    for (final (f, c) in [(1, 2), (1, 3), (2, 3)]) {
+      for (var p = 0; p < 4; p++) {
+        _jugar(cubit, f, c);
+      }
+    }
 
-    expect(juego.puntos[azul1], 7);
-    expect(juego.puntos[azul2], 0);
-    expect(juego.puntajeTotal, 7);
+    final estado = cubit.state;
+    expect(estado.ordenZonas[azul1], [0, 1, 2, 3]);
+    expect(estado.puntosEn(0, azul1), 7);
+    expect(estado.puntosEn(1, azul1), 5);
+    expect(estado.puntosEn(2, azul1), 3);
+    expect(estado.puntosEn(3, azul1), 0); // el cuarto ya no puntúa
+
+    // La otra zona azul no se mezcla.
+    expect(estado.ordenZonas[azul2], isEmpty);
+    expect(estado.puntajeDe(0), 7);
   });
 
   test('el cubit usa el ancla y solo deja colocar en casillas iluminadas', () {
-    final cubit = JuegoCubit(iniciales: const [1, 2, 3, 4, 5, 6]);
+    final cubit = JuegoCubit(iniciales: [_iniciales, _iniciales]);
 
     cubit.fijarDados(1, 5);
     cubit.elegirAncla(0); // el 1 es el ancla, se coloca el 5
@@ -91,19 +94,22 @@ void main() {
     expect(cubit.state.jugadasResaltadas, {(0, 1), (0, 3)});
 
     cubit.colocar(6, 6); // no está iluminada: se ignora
-    expect(cubit.state.juego.tablero[6][6], isNull);
+    expect(cubit.state.tableros[0].tablero[6][6], isNull);
 
     cubit.colocar(0, 1);
-    expect(cubit.state.juego.tablero[0][1], 5);
+    expect(cubit.state.tableros[0].tablero[0][1], 5);
+    expect(cubit.state.tableros[1].tablero[0][1], isNull); // otro tablero
     expect(cubit.state.hayDados, isFalse);
+    expect(cubit.state.jugador, 1); // ahora le toca al jugador 2
     expect(cubit.state.turno, 2);
   });
 
-  test('se puede pasar el turno', () {
-    final cubit = JuegoCubit(iniciales: const [1, 2, 3, 4, 5, 6]);
+  test('pasar el turno cambia de jugador', () {
+    final cubit = JuegoCubit(iniciales: [_iniciales, _iniciales]);
     cubit.fijarDados(6, 6);
     cubit.pasarTurno();
     expect(cubit.state.hayDados, isFalse);
+    expect(cubit.state.jugador, 1);
     expect(cubit.state.turno, 2);
   });
 }

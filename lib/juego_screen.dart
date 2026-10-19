@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'juego.dart';
 import 'juego_cubit.dart';
+import 'reglas.dart';
 import 'tablero_layout.dart';
 import 'tipo.dart';
 
@@ -11,7 +14,8 @@ const _panel = Color(0xFF1F2244);
 const _dorado = Color(0xFFFFD166);
 
 class JuegoScreen extends StatelessWidget {
-  final List<int> iniciales;
+  /// Los 6 números iniciales de cada jugador.
+  final List<List<int>> iniciales;
 
   const JuegoScreen({super.key, required this.iniciales});
 
@@ -37,20 +41,24 @@ class _VistaJuego extends StatelessWidget {
               !anterior.terminado && actual.terminado,
           listener: (context, estado) => _mostrarFinal(context, estado),
           builder: (context, estado) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
                   child: Column(
                     children: [
                       _Encabezado(estado: estado),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
+                      _Marcadores(estado: estado),
+                      const SizedBox(height: 8),
                       _ZonaDados(estado: estado),
-                      const SizedBox(height: 16),
-                      _TableroJuego(estado: estado),
-                      const SizedBox(height: 16),
-                      _PanelPuntos(estado: estado),
+                      const SizedBox(height: 8),
+                      Expanded(child: _TableroJuego(estado: estado)),
+                      const SizedBox(height: 8),
+                      _PanelZonas(estado: estado),
+                      const SizedBox(height: 8),
+                      _Botones(estado: estado),
                     ],
                   ),
                 ),
@@ -63,11 +71,38 @@ class _VistaJuego extends StatelessWidget {
   }
 
   void _mostrarFinal(BuildContext context, JuegoEstado estado) {
+    final n = estado.totalJugadores;
+    final puntajes = [for (var p = 0; p < n; p++) estado.puntajeDe(p)];
+    final maximo = puntajes.reduce(max);
+    final ganadores = [
+      for (var p = 0; p < n; p++)
+        if (puntajes[p] == maximo) p + 1,
+    ];
+    final orden = List.generate(n, (i) => i)
+      ..sort((a, b) => puntajes[b].compareTo(puntajes[a]));
+
+    final titulo = n == 1
+        ? 'Partida terminada'
+        : ganadores.length == 1
+            ? 'Gana el Jugador ${ganadores.first}'
+            : 'Empate entre los jugadores ${ganadores.join(', ')}';
+
+    final lineas = <Widget>[
+      if (n == 1)
+        Text('Puntaje final: ${puntajes[0]} puntos')
+      else
+        for (final p in orden) Text('Jugador ${p + 1}: ${puntajes[p]} puntos'),
+    ];
+
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Partida terminada'),
-        content: Text('Puntaje final: ${estado.juego.puntajeTotal}'),
+        title: Text(titulo),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: lineas,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
@@ -91,52 +126,120 @@ class _Encabezado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final turno = estado.terminado
+        ? 'Partida terminada'
+        : estado.esIndividual
+            ? 'Turno ${estado.turno}'
+            : 'Turno: Jugador ${estado.jugador + 1}';
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'BRILLIANT',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 4,
-              ),
-            ),
-            Text(
-              'Turno ${estado.turno}',
-              style: const TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-          decoration: BoxDecoration(
-            color: _panel,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _dorado, width: 1.5),
+        const Text(
+          'BRILLIANT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 3,
           ),
-          child: Column(
-            children: [
-              const Text(
-                'PUNTOS',
-                style: TextStyle(color: _dorado, fontSize: 11, letterSpacing: 2),
+        ),
+        const Spacer(),
+        Text(
+          turno,
+          style: const TextStyle(
+            color: _dorado,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        IconButton(
+          onPressed: () => mostrarReglas(context),
+          tooltip: 'Reglas',
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.help_outline_rounded, color: Colors.white70),
+        ),
+      ],
+    );
+  }
+}
+
+class _Marcadores extends StatelessWidget {
+  final JuegoEstado estado;
+
+  const _Marcadores({required this.estado});
+
+  @override
+  Widget build(BuildContext context) {
+    final n = estado.totalJugadores;
+    return Row(
+      children: [
+        for (var p = 0; p < n; p++)
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: p == n - 1 ? 0 : 6),
+              child: _Marcador(
+                nombre: n == 1 ? 'PUNTOS' : 'JUGADOR ${p + 1}',
+                puntos: estado.puntajeDe(p),
+                activo: n > 1 && p == estado.jugador && !estado.terminado,
               ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Marcador extends StatelessWidget {
+  final String nombre;
+  final int puntos;
+  final bool activo;
+
+  const _Marcador({
+    required this.nombre,
+    required this.puntos,
+    required this.activo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: activo ? _dorado : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                '${estado.juego.puntajeTotal}',
+                nombre,
+                style: TextStyle(
+                  color: activo ? _dorado : Colors.white70,
+                  fontSize: 11,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '$puntos',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 30,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -148,7 +251,11 @@ class _ZonaDados extends StatelessWidget {
 
   String get _instruccion {
     if (estado.terminado) return 'Partida terminada';
-    if (!estado.hayDados) return 'Tira los dados para empezar el turno';
+    if (!estado.hayDados) {
+      return estado.esIndividual
+          ? 'Tira los dados para empezar el turno'
+          : 'Jugador ${estado.jugador + 1}, tira los dados';
+    }
     if (estado.ancla == null) {
       return estado.hayJugadas
           ? 'Toca un dado para elegirlo como ancla'
@@ -170,81 +277,61 @@ class _ZonaDados extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<JuegoCubit>();
 
-    return Column(
-      children: [
-        if (estado.hayDados)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _Dado(
-                valor: estado.dado1!,
-                etiqueta: _etiqueta(0),
-                esAncla: estado.indiceAncla == 0,
-                onTap: estado.terminado ? null : () => cubit.elegirAncla(0),
-              ),
-              const SizedBox(width: 28),
-              _Dado(
-                valor: estado.dado2!,
-                etiqueta: _etiqueta(1),
-                esAncla: estado.indiceAncla == 1,
-                onTap: estado.terminado ? null : () => cubit.elegirAncla(1),
-              ),
-            ],
+    return SizedBox(
+      height: 76,
+      child: Row(
+        children: [
+          _Dado(
+            valor: estado.dado1,
+            etiqueta: _etiqueta(0),
+            esAncla: estado.indiceAncla == 0,
+            onTap: estado.terminado || !estado.hayDados
+                ? null
+                : () => cubit.elegirAncla(0),
           ),
-        const SizedBox(height: 8),
-        Text(
-          _instruccion,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70),
-        ),
-        if (estado.mensaje.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              estado.mensaje,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _dorado,
-                fontWeight: FontWeight.bold,
-              ),
+          const SizedBox(width: 10),
+          _Dado(
+            valor: estado.dado2,
+            etiqueta: _etiqueta(1),
+            esAncla: estado.indiceAncla == 1,
+            onTap: estado.terminado || !estado.hayDados
+                ? null
+                : () => cubit.elegirAncla(1),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _instruccion,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                if (estado.mensaje.isNotEmpty)
+                  Text(
+                    estado.mensaje,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _dorado,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
             ),
           ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            if (!estado.terminado && !estado.hayDados)
-              FilledButton(
-                onPressed: cubit.tirarDados,
-                child: const Text('Tirar dados'),
-              ),
-            if (!estado.terminado && estado.hayDados && !estado.hayJugadas)
-              FilledButton(
-                onPressed: cubit.pasarTurno,
-                child: const Text('Pasar turno'),
-              ),
-            if (!estado.terminado)
-              OutlinedButton(
-                onPressed: cubit.terminar,
-                child: const Text('Terminar partida'),
-              ),
-            if (estado.terminado)
-              FilledButton(
-                onPressed: () =>
-                    Navigator.of(context).popUntil((r) => r.isFirst),
-                child: const Text('Nueva partida'),
-              ),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _Dado extends StatelessWidget {
-  final int valor;
+  final int? valor;
   final String etiqueta;
   final bool esAncla;
   final VoidCallback? onTap;
@@ -259,41 +346,53 @@ class _Dado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
           onTap: onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 72,
-            height: 72,
-            padding: const EdgeInsets.all(10),
+            width: 54,
+            height: 54,
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white.withValues(alpha: valor == null ? 0.25 : 1),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: esAncla ? _dorado : Colors.transparent,
-                width: 4,
+                width: 3,
               ),
               boxShadow: esAncla
                   ? [
                       BoxShadow(
                         color: _dorado.withValues(alpha: 0.6),
-                        blurRadius: 14,
+                        blurRadius: 12,
                       ),
                     ]
                   : null,
             ),
-            child: _Puntos(valor: valor),
+            child: valor == null
+                ? const Center(
+                    child: Text(
+                      '?',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : _Puntos(valor: valor!),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         Text(
           etiqueta,
           style: TextStyle(
             color: esAncla ? _dorado : Colors.white70,
-            fontSize: 11,
+            fontSize: 9,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+            letterSpacing: 0.5,
           ),
         ),
       ],
@@ -330,8 +429,8 @@ class _Puntos extends StatelessWidget {
                     child: Center(
                       child: activos.contains(fila * 3 + col)
                           ? Container(
-                              width: 10,
-                              height: 10,
+                              width: 8,
+                              height: 8,
                               decoration: const BoxDecoration(
                                 color: _fondo,
                                 shape: BoxShape.circle,
@@ -348,6 +447,7 @@ class _Puntos extends StatelessWidget {
   }
 }
 
+/// El tablero ocupa el espacio que sobra, como un cuadrado.
 class _TableroJuego extends StatelessWidget {
   final JuegoEstado estado;
 
@@ -357,35 +457,48 @@ class _TableroJuego extends StatelessWidget {
   Widget build(BuildContext context) {
     final resaltadas = estado.jugadasResaltadas;
     final ancla = estado.ancla;
+    final tablero = estado.juego.tablero;
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Column(
-        children: [
-          for (var f = 0; f < layoutTableroNivel1.length; f++)
-            Expanded(
-              child: Row(
-                children: [
-                  for (var c = 0; c < layoutTableroNivel1[f].length; c++)
-                    Expanded(
-                      child: _CeldaJuego(
-                        tipo: layoutTableroNivel1[f][c],
-                        valor: estado.juego.tablero[f][c],
-                        resaltada: resaltadas.contains((f, c)),
-                        esAncla: ancla != null &&
-                            estado.juego.tablero[f][c] == ancla,
-                        esSemilla: Juego.esSemilla(f, c),
-                        sugerido: estado.aColocar,
-                        onTap: resaltadas.contains((f, c))
-                            ? () => context.read<JuegoCubit>().colocar(f, c)
-                            : null,
-                      ),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final lado = max(0.0, min(c.maxWidth, c.maxHeight));
+        return Center(
+          child: SizedBox(
+            width: lado,
+            height: lado,
+            child: Column(
+              children: [
+                for (var f = 0; f < layoutTableroNivel1.length; f++)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        for (var col = 0;
+                            col < layoutTableroNivel1[f].length;
+                            col++)
+                          Expanded(
+                            child: _CeldaJuego(
+                              tipo: layoutTableroNivel1[f][col],
+                              valor: tablero[f][col],
+                              resaltada: resaltadas.contains((f, col)),
+                              esAncla:
+                                  ancla != null && tablero[f][col] == ancla,
+                              esSemilla: Juego.esSemilla(f, col),
+                              sugerido: estado.aColocar,
+                              onTap: resaltadas.contains((f, col))
+                                  ? () => context
+                                      .read<JuegoCubit>()
+                                      .colocar(f, col)
+                                  : null,
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -411,57 +524,66 @@ class _CeldaJuego extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget? texto;
+    if (valor != null) {
+      texto = Text(
+        '$valor',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          shadows: [Shadow(blurRadius: 2, color: Colors.black54)],
+        ),
+      );
+    } else if (resaltada && sugerido != null) {
+      texto = Text(
+        '$sugerido',
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.all(1.5),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: tipo.color,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: resaltada
-                ? Border.all(color: Colors.white, width: 3)
+                ? Border.all(color: Colors.white, width: 2.5)
                 : esAncla
-                    ? Border.all(color: _dorado, width: 3)
+                    ? Border.all(color: _dorado, width: 2.5)
                     : null,
             boxShadow: resaltada
                 ? [
                     BoxShadow(
                       color: Colors.white.withValues(alpha: 0.7),
-                      blurRadius: 10,
+                      blurRadius: 8,
                     ),
                   ]
                 : null,
           ),
           child: Stack(
             children: [
-              Center(
-                child: valor != null
-                    ? Text(
-                        '$valor',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          shadows: [Shadow(blurRadius: 2, color: Colors.black54)],
-                        ),
-                      )
-                    : (resaltada && sugerido != null)
-                        ? Text(
-                            '$sugerido',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-              ),
+              if (texto != null)
+                Center(
+                  child: FittedBox(
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: texto,
+                    ),
+                  ),
+                ),
               if (esSemilla)
                 const Positioned(
-                  right: 2,
-                  bottom: 2,
-                  child: Icon(Icons.star_rounded, color: _dorado, size: 12),
+                  right: 1,
+                  bottom: 1,
+                  child: Icon(Icons.star_rounded, color: _dorado, size: 10),
                 ),
             ],
           ),
@@ -471,50 +593,38 @@ class _CeldaJuego extends StatelessWidget {
   }
 }
 
-class _PanelPuntos extends StatelessWidget {
+/// Las 9 zonas en dos filas de chips, con su próximo puntaje.
+class _PanelZonas extends StatelessWidget {
   final JuegoEstado estado;
 
-  const _PanelPuntos({required this.estado});
+  const _PanelZonas({required this.estado});
 
   @override
   Widget build(BuildContext context) {
     final zonas = estructuraNivel1.zonas;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Puntos por zona',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.45,
+    return LayoutBuilder(
+      builder: (context, c) {
+        const espacio = 6.0;
+        final ancho = (c.maxWidth - espacio * 4 - 1) / 5;
+        return Wrap(
+          spacing: espacio,
+          runSpacing: espacio,
           children: [
             for (var i = 0; i < zonas.length; i++)
-              _ChipZona(
-                nombre: zonas[i].nombre,
-                tipo: zonas[i].tipo,
-                puntos: estado.juego.puntos[i],
-                completadas: estado.juego.completadas[i],
+              SizedBox(
+                width: ancho,
+                height: 40,
+                child: _ChipZona(
+                  nombre: zonas[i].nombre,
+                  tipo: zonas[i].tipo,
+                  orden: estado.ordenZonas[i],
+                  individual: estado.esIndividual,
+                ),
               ),
           ],
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Cada zona puntúa solo en sus 3 primeros llenados.',
-          style: TextStyle(color: Colors.white54, fontSize: 12),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -522,53 +632,107 @@ class _PanelPuntos extends StatelessWidget {
 class _ChipZona extends StatelessWidget {
   final String nombre;
   final Tipo tipo;
-  final int puntos;
-  final int completadas;
+  final List<int> orden; // jugadores que la completaron, en orden
+  final bool individual;
 
   const _ChipZona({
     required this.nombre,
     required this.tipo,
-    required this.puntos,
-    required this.completadas,
+    required this.orden,
+    required this.individual,
   });
 
   @override
   Widget build(BuildContext context) {
     final tabla = puntosDe(tipo);
-    final proximo = completadas < tabla.length ? tabla[completadas] : 0;
-    final textoColor = tipo is TipoAmarillo ? Colors.black87 : Colors.white;
+    final proximo = orden.length < tabla.length ? tabla[orden.length] : 0;
+    final color = tipo is TipoAmarillo ? Colors.black87 : Colors.white;
+
+    final String detalle;
+    if (orden.isEmpty) {
+      detalle = '+$proximo';
+    } else if (individual) {
+      detalle = '✓';
+    } else {
+      detalle = [for (final p in orden) 'J${p + 1}'].join('›');
+    }
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       decoration: BoxDecoration(
         color: tipo.color,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            nombre,
-            style: TextStyle(
-              color: textoColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              nombre,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          Text(
-            '$puntos pts',
-            style: TextStyle(
-              color: textoColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              detalle,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          Text(
-            'Llenada ${completadas}x · próx. +$proximo',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: textoColor, fontSize: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _Botones extends StatelessWidget {
+  final JuegoEstado estado;
+
+  const _Botones({required this.estado});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<JuegoCubit>();
+
+    final String texto;
+    final VoidCallback? accion;
+    if (estado.terminado) {
+      texto = 'Nueva partida';
+      accion = () => Navigator.of(context).popUntil((r) => r.isFirst);
+    } else if (!estado.hayDados) {
+      texto = 'Tirar dados';
+      accion = cubit.tirarDados;
+    } else if (!estado.hayJugadas) {
+      texto = 'Pasar turno';
+      accion = cubit.pasarTurno;
+    } else {
+      texto = 'Elige dado y casilla';
+      accion = null;
+    }
+
+    return SizedBox(
+      height: 46,
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton(onPressed: accion, child: Text(texto)),
           ),
+          if (!estado.terminado) ...[
+            const SizedBox(width: 10),
+            OutlinedButton(
+              onPressed: cubit.terminar,
+              child: const Text('Terminar'),
+            ),
+          ],
         ],
       ),
     );

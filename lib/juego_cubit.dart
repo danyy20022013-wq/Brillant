@@ -6,7 +6,13 @@ import 'package:equatable/equatable.dart';
 import 'juego.dart';
 
 class JuegoEstado extends Equatable {
-  final Juego juego;
+  /// Un tablero por jugador.
+  final List<Juego> tableros;
+
+  /// Por cada zona, los jugadores que la completaron, en orden.
+  final List<List<int>> ordenZonas;
+
+  final int jugador; // jugador al que le toca
   final int? dado1;
   final int? dado2;
   final int? indiceAncla; // 0 = el dado 1 es el ancla, 1 = el dado 2
@@ -15,7 +21,9 @@ class JuegoEstado extends Equatable {
   final String mensaje;
 
   const JuegoEstado({
-    required this.juego,
+    required this.tableros,
+    required this.ordenZonas,
+    this.jugador = 0,
     this.dado1,
     this.dado2,
     this.indiceAncla,
@@ -24,6 +32,9 @@ class JuegoEstado extends Equatable {
     this.mensaje = '',
   });
 
+  Juego get juego => tableros[jugador];
+  int get totalJugadores => tableros.length;
+  bool get esIndividual => tableros.length == 1;
   bool get hayDados => dado1 != null && dado2 != null;
 
   int? get ancla =>
@@ -40,27 +51,83 @@ class JuegoEstado extends Equatable {
     return juego.jugadasPosibles(ancla: a, aColocar: b);
   }
 
-  /// true si con estos dados existe al menos una jugada (con cualquiera
-  /// de los dos como ancla).
+  /// true si con estos dados hay al menos una jugada.
   bool get hayJugadas {
     if (!hayDados) return false;
-    return juego
-            .jugadasPosibles(ancla: dado1!, aColocar: dado2!)
-            .isNotEmpty ||
+    return juego.jugadasPosibles(ancla: dado1!, aColocar: dado2!).isNotEmpty ||
         juego.jugadasPosibles(ancla: dado2!, aColocar: dado1!).isNotEmpty;
   }
 
+  /// Puntos que [jugadorIdx] obtuvo en la zona [zona], según el lugar
+  /// en que la completó.
+  int puntosEn(int jugadorIdx, int zona) {
+    final lugar = ordenZonas[zona].indexOf(jugadorIdx);
+    if (lugar == -1) return 0;
+    final tabla = puntosDe(estructuraNivel1.zonas[zona].tipo);
+    return lugar < tabla.length ? tabla[lugar] : 0;
+  }
+
+  int puntajeDe(int jugadorIdx) {
+    var total = 0;
+    for (var z = 0; z < ordenZonas.length; z++) {
+      total += puntosEn(jugadorIdx, z);
+    }
+    return total;
+  }
+
+  /// Copia el estado. Los dados, el ancla y el mensaje NO se conservan
+  /// salvo que se pasen.
+  JuegoEstado copiar({
+    List<Juego>? tableros,
+    List<List<int>>? ordenZonas,
+    int? jugador,
+    int? dado1,
+    int? dado2,
+    int? indiceAncla,
+    int? turno,
+    bool? terminado,
+    String? mensaje,
+  }) {
+    return JuegoEstado(
+      tableros: tableros ?? this.tableros,
+      ordenZonas: ordenZonas ?? this.ordenZonas,
+      jugador: jugador ?? this.jugador,
+      dado1: dado1,
+      dado2: dado2,
+      indiceAncla: indiceAncla,
+      turno: turno ?? this.turno,
+      terminado: terminado ?? this.terminado,
+      mensaje: mensaje ?? '',
+    );
+  }
+
   @override
-  List<Object?> get props =>
-      [juego, dado1, dado2, indiceAncla, turno, terminado, mensaje];
+  List<Object?> get props => [
+        tableros,
+        ordenZonas,
+        jugador,
+        dado1,
+        dado2,
+        indiceAncla,
+        turno,
+        terminado,
+        mensaje,
+      ];
 }
 
 class JuegoCubit extends Cubit<JuegoEstado> {
   final Random _random;
 
-  JuegoCubit({required List<int> iniciales, Random? random})
+  /// [iniciales] trae los 6 números iniciales de cada jugador.
+  JuegoCubit({required List<List<int>> iniciales, Random? random})
       : _random = random ?? Random(),
-        super(JuegoEstado(juego: Juego.inicial(iniciales)));
+        super(JuegoEstado(
+          tableros: [for (final i in iniciales) Juego.inicial(i)],
+          ordenZonas: List.generate(
+            estructuraNivel1.zonas.length,
+            (_) => <int>[],
+          ),
+        ));
 
   void tirarDados() {
     fijarDados(_random.nextInt(6) + 1, _random.nextInt(6) + 1);
@@ -69,23 +136,27 @@ class JuegoCubit extends Cubit<JuegoEstado> {
   /// Pone valores concretos en los dados (lo usan tirarDados y las pruebas).
   void fijarDados(int a, int b) {
     if (state.terminado || state.hayDados) return;
-    emit(JuegoEstado(
-      juego: state.juego,
-      dado1: a,
-      dado2: b,
-      turno: state.turno,
-    ));
+    emit(state.copiar(dado1: a, dado2: b));
   }
 
   void elegirAncla(int indice) {
     if (state.terminado || !state.hayDados) return;
-    emit(JuegoEstado(
-      juego: state.juego,
+    emit(state.copiar(
       dado1: state.dado1,
       dado2: state.dado2,
       indiceAncla: indice,
-      turno: state.turno,
     ));
+  }
+
+  /// Siguiente jugador que todavía tiene espacio en su tablero,
+  /// o null si todos los tableros están llenos.
+  int? _siguiente(int actual, List<Juego> tableros) {
+    final n = tableros.length;
+    for (var i = 1; i <= n; i++) {
+      final idx = (actual + i) % n;
+      if (!tableros[idx].estaLleno) return idx;
+    }
+    return null;
   }
 
   void colocar(int fila, int columna) {
@@ -93,45 +164,58 @@ class JuegoCubit extends Cubit<JuegoEstado> {
     if (state.terminado || valor == null) return;
     if (!state.jugadasResaltadas.contains((fila, columna))) return;
 
-    final anterior = state.juego;
-    final nuevo = anterior.colocar(fila, columna, valor);
-    final z = estructuraNivel1.indiceZona[fila][columna];
-    final zona = estructuraNivel1.zonas[z];
+    final j = state.jugador;
+    final antes = state.tableros[j];
+    final despues = antes.colocar(fila, columna, valor);
 
+    final orden = [for (final o in state.ordenZonas) [...o]];
     var mensaje = '';
-    if (nuevo.completadas[z] > anterior.completadas[z]) {
-      final ganados = nuevo.puntos[z] - anterior.puntos[z];
-      mensaje = ganados > 0
-          ? '¡${zona.nombre} completada! +$ganados puntos'
-          : '${zona.nombre} completada (ya no puntúa)';
+    final z = estructuraNivel1.indiceZona[fila][columna];
+    if (!antes.zonaLlena(z) && despues.zonaLlena(z)) {
+      orden[z].add(j);
+      final tabla = puntosDe(estructuraNivel1.zonas[z].tipo);
+      final lugar = orden[z].length - 1;
+      final puntos = lugar < tabla.length ? tabla[lugar] : 0;
+      final nombre = estructuraNivel1.zonas[z].nombre;
+      final quien = state.esIndividual ? 'Completaste' : 'J${j + 1} completó';
+      mensaje = puntos > 0
+          ? '$quien $nombre: +$puntos puntos'
+          : '$quien $nombre (ya no puntúa)';
     }
 
-    emit(JuegoEstado(
-      juego: nuevo,
+    final tableros = [...state.tableros];
+    tableros[j] = despues;
+    final siguiente = _siguiente(j, tableros);
+
+    emit(state.copiar(
+      tableros: tableros,
+      ordenZonas: orden,
+      jugador: siguiente ?? j,
       turno: state.turno + 1,
-      terminado: nuevo.todasAgotadas,
+      terminado: siguiente == null,
       mensaje: mensaje,
     ));
   }
 
-  /// Descarta la tirada cuando no hay jugadas posibles.
+  /// Descarta la tirada y le pasa el turno al siguiente jugador.
   void pasarTurno() {
     if (state.terminado || !state.hayDados) return;
-    emit(JuegoEstado(
-      juego: state.juego,
+    final siguiente = _siguiente(state.jugador, state.tableros);
+    emit(state.copiar(
+      jugador: siguiente ?? state.jugador,
       turno: state.turno + 1,
-      mensaje: 'Pasaste el turno',
+      mensaje: state.esIndividual
+          ? 'Pasaste el turno'
+          : 'J${state.jugador + 1} pasó el turno',
     ));
   }
 
   void terminar() {
     if (state.terminado) return;
-    emit(JuegoEstado(
-      juego: state.juego,
+    emit(state.copiar(
       dado1: state.dado1,
       dado2: state.dado2,
       indiceAncla: state.indiceAncla,
-      turno: state.turno,
       terminado: true,
       mensaje: state.mensaje,
     ));
