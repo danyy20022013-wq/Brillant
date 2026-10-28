@@ -143,13 +143,20 @@ class _Encabezado extends StatelessWidget {
             letterSpacing: 3,
           ),
         ),
-        const Spacer(),
-        Text(
-          turno,
-          style: const TextStyle(
-            color: _dorado,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                turno,
+                style: const TextStyle(
+                  color: _dorado,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ),
         IconButton(
@@ -282,6 +289,7 @@ class _ZonaDados extends StatelessWidget {
       child: Row(
         children: [
           _Dado(
+            key: const Key('dado-0'),
             valor: estado.dado1,
             etiqueta: _etiqueta(0),
             esAncla: estado.indiceAncla == 0,
@@ -291,6 +299,7 @@ class _ZonaDados extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           _Dado(
+            key: const Key('dado-1'),
             valor: estado.dado2,
             etiqueta: _etiqueta(1),
             esAncla: estado.indiceAncla == 1,
@@ -337,6 +346,7 @@ class _Dado extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _Dado({
+    super.key,
     required this.valor,
     required this.etiqueta,
     required this.esAncla,
@@ -477,6 +487,7 @@ class _TableroJuego extends StatelessWidget {
                             col++)
                           Expanded(
                             child: _CeldaJuego(
+                              key: Key('celda-$f-$col'),
                               tipo: layoutTableroNivel1[f][col],
                               valor: tablero[f][col],
                               resaltada: resaltadas.contains((f, col)),
@@ -513,6 +524,7 @@ class _CeldaJuego extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _CeldaJuego({
+    super.key,
     required this.tipo,
     required this.valor,
     required this.resaltada,
