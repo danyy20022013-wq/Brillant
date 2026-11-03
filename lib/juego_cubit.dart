@@ -4,6 +4,44 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import 'juego.dart';
+import 'tipo.dart';
+
+/// Evento: un jugador acaba de completar una zona. Viaja en el estado solo
+/// en la jugada que la completó (la siguiente acción lo limpia).
+class ZonaCompletada extends Equatable {
+  /// Índice de la zona en la estructura del mapa.
+  final int zona;
+  final String nombre;
+  final Tipo tipo;
+
+  /// Jugador que la completó (0 = el primero).
+  final int jugador;
+
+  /// Lugar en que la completó (0 = 1.º, 1 = 2.º...).
+  final int lugar;
+
+  /// Puntos ganados; 0 si ya no puntúa (4.º jugador o más).
+  final int puntos;
+
+  /// Turno de la jugada, para distinguir dos avisos iguales seguidos.
+  final int turno;
+
+  const ZonaCompletada({
+    required this.zona,
+    required this.nombre,
+    required this.tipo,
+    required this.jugador,
+    required this.lugar,
+    required this.puntos,
+    required this.turno,
+  });
+
+  bool get puntua => puntos > 0;
+
+  @override
+  List<Object?> get props =>
+      [zona, nombre, tipo, jugador, lugar, puntos, turno];
+}
 
 class JuegoEstado extends Equatable {
   /// Un tablero por jugador.
@@ -19,6 +57,9 @@ class JuegoEstado extends Equatable {
   final int turno;
   final bool terminado;
   final String mensaje;
+
+  /// La zona que se completó en la última jugada (null si ninguna).
+  final ZonaCompletada? zonaCompletada;
 
   final Nivel? _nivel;
 
@@ -36,6 +77,7 @@ class JuegoEstado extends Equatable {
     this.turno = 1,
     this.terminado = false,
     this.mensaje = '',
+    this.zonaCompletada,
   }) : _nivel = nivel;
 
   Juego get juego => tableros[jugador];
@@ -81,8 +123,8 @@ class JuegoEstado extends Equatable {
     return total;
   }
 
-  /// Copia el estado. Los dados, el ancla y el mensaje NO se conservan
-  /// salvo que se pasen.
+  /// Copia el estado. Los dados, el ancla, el mensaje y la zona completada
+  /// NO se conservan salvo que se pasen.
   JuegoEstado copiar({
     List<Juego>? tableros,
     List<List<int>>? ordenZonas,
@@ -93,6 +135,7 @@ class JuegoEstado extends Equatable {
     int? turno,
     bool? terminado,
     String? mensaje,
+    ZonaCompletada? zonaCompletada,
   }) {
     return JuegoEstado(
       tableros: tableros ?? this.tableros,
@@ -105,6 +148,7 @@ class JuegoEstado extends Equatable {
       turno: turno ?? this.turno,
       terminado: terminado ?? this.terminado,
       mensaje: mensaje ?? '',
+      zonaCompletada: zonaCompletada,
     );
   }
 
@@ -120,6 +164,7 @@ class JuegoEstado extends Equatable {
         turno,
         terminado,
         mensaje,
+        zonaCompletada,
       ];
 }
 
@@ -188,6 +233,7 @@ class JuegoCubit extends Cubit<JuegoEstado> {
 
     final orden = [for (final o in state.ordenZonas) [...o]];
     var mensaje = '';
+    ZonaCompletada? evento;
     final estructura = state.nivel.estructura;
     final z = estructura.indiceZona[fila][columna];
     if (!antes.zonaLlena(z) && despues.zonaLlena(z)) {
@@ -200,6 +246,15 @@ class JuegoCubit extends Cubit<JuegoEstado> {
       mensaje = puntos > 0
           ? '$quien $nombre: +$puntos puntos'
           : '$quien $nombre (ya no puntúa)';
+      evento = ZonaCompletada(
+        zona: z,
+        nombre: nombre,
+        tipo: estructura.zonas[z].tipo,
+        jugador: j,
+        lugar: lugar,
+        puntos: puntos,
+        turno: state.turno,
+      );
     }
 
     final tableros = [...state.tableros];
@@ -213,6 +268,7 @@ class JuegoCubit extends Cubit<JuegoEstado> {
       turno: state.turno + 1,
       terminado: siguiente == null,
       mensaje: mensaje,
+      zonaCompletada: evento,
     ));
   }
 

@@ -33,6 +33,55 @@ class JuegoScreen extends StatelessWidget {
 /// Duración del giro de los dados. Solo es visual: el valor lo decide el cubit.
 const duracionGiroDados = Duration(milliseconds: 500);
 
+/// Cuánto se queda en pantalla el aviso de zona completada.
+const duracionAvisoZona = Duration(seconds: 3);
+
+/// Muestra el aviso flotante de [zona] completada. Va sobre el panel de
+/// zonas (no tapa el tablero, los dados ni los botones) y se va solo.
+void mostrarAvisoZona(BuildContext context, ZonaCompletada zona) {
+  final titulo = zona.puntua ? '+${zona.puntos} puntos' : 'Ya no puntúa';
+  final detalle = '${zona.nombre} completada';
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      key: Key('aviso-zona-${zona.turno}'),
+      behavior: SnackBarBehavior.floating,
+      duration: duracionAvisoZona,
+      backgroundColor: _panel,
+      elevation: 6,
+      // Queda justo encima de los botones de abajo, sobre el panel de zonas,
+      // y es bajo para no tapar el tablero en celulares chicos.
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 66),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: zona.tipo.color, width: 3),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            titulo,
+            style: TextStyle(
+              color: zona.puntua ? _dorado : Colors.white70,
+              fontSize: zona.puntua ? 22 : 18,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+          ),
+          Text(
+            detalle,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _VistaJuego extends StatefulWidget {
   const _VistaJuego();
 
@@ -66,7 +115,22 @@ class _VistaJuegoState extends State<_VistaJuego>
     return Scaffold(
       backgroundColor: _fondo,
       body: SafeArea(
-        child: BlocConsumer<JuegoCubit, JuegoEstado>(
+        child: BlocListener<JuegoCubit, JuegoEstado>(
+          // Cada zona completada genera un aviso; el ScaffoldMessenger los
+          // encola, así que varios seguidos no se pisan.
+          listenWhen: (anterior, actual) =>
+              actual.zonaCompletada != null &&
+              actual.zonaCompletada != anterior.zonaCompletada,
+          listener: (context, estado) =>
+              mostrarAvisoZona(context, estado.zonaCompletada!),
+          child: _contenido(),
+        ),
+      ),
+    );
+  }
+
+  Widget _contenido() {
+    return BlocConsumer<JuegoCubit, JuegoEstado>(
           listenWhen: (anterior, actual) =>
               !anterior.terminado && actual.terminado,
           listener: (context, estado) => _mostrarFinal(context, estado),
@@ -104,9 +168,7 @@ class _VistaJuegoState extends State<_VistaJuego>
               ),
             );
           },
-        ),
-      ),
-    );
+        );
   }
 
   void _mostrarFinal(BuildContext context, JuegoEstado estado) {
