@@ -15,13 +15,13 @@ void main() {
     expect(casillasEstrella.length, 6);
     final zonas = {
       for (final p in casillasEstrella)
-        estructuraNivel1.indiceZona[p.fila][p.columna],
+        nivel1.estructura.indiceZona[p.fila][p.columna],
     };
     expect(zonas.length, 6);
   });
 
   test('cada zona tiene el tamaño correcto', () {
-    for (final zona in estructuraNivel1.zonas) {
+    for (final zona in nivel1.estructura.zonas) {
       if (zona.tipo is TipoAzul) {
         expect(zona.celdas.length, 4, reason: zona.nombre);
       } else if (zona.tipo is TipoAmarillo) {
@@ -33,7 +33,7 @@ void main() {
   });
 
   test('las zonas tienen sus nombres', () {
-    final nombres = estructuraNivel1.zonas.map((z) => z.nombre).toSet();
+    final nombres = nivel1.estructura.zonas.map((z) => z.nombre).toSet();
     expect(
       nombres,
       containsAll([
@@ -50,20 +50,41 @@ void main() {
     );
   });
 
-  test('los puntos por orden de llenado de cada color', () {
-    expect(puntosDe(Tipo.rojo), [6, 4, 2]);
-    expect(puntosDe(Tipo.azul), [7, 5, 3]);
-    expect(puntosDe(Tipo.verde), [4, 3, 2]);
-    expect(puntosDe(Tipo.amarillo), [8, 6, 4]);
-    expect(puntosDe(Tipo.morado), [6, 4, 2]);
+  test('los puntos por orden de llenado de cada color (datos del mapa 1)', () {
+    const esperados = {
+      Tipo.rojo: [6, 4, 2],
+      Tipo.azul: [7, 5, 3],
+      Tipo.verde: [4, 3, 2],
+      Tipo.amarillo: [8, 6, 4],
+      Tipo.morado: [6, 4, 2],
+    };
+    for (final zona in nivel1.estructura.zonas) {
+      expect(zona.puntos, esperados[zona.tipo], reason: zona.nombre);
+    }
+  });
+
+  test('si a un mapa le faltan los puntos de un color, avisa', () {
+    expect(
+      () => EstructuraTablero.desdeLayout(
+        layoutTableroNivel1,
+        puntos: const {Tipo.rojo: [6, 4, 2]},
+      ),
+      throwsA(
+        isA<ArgumentError>().having(
+          (e) => e.message,
+          'mensaje',
+          contains('Faltan los puntos de'),
+        ),
+      ),
+    );
   });
 
   test('estado inicial de Juego', () {
     final juego = Juego.inicial([1, 2, 3, 4, 5, 6]);
-    final azul1 = estructuraNivel1.indiceZona[0][2];
+    final azul1 = nivel1.estructura.indiceZona[0][2];
 
-    expect(Juego.esSemilla(0, 2), isTrue);
-    expect(Juego.esSemilla(0, 0), isFalse);
+    expect(nivel1.esEstrella(0, 2), isTrue);
+    expect(nivel1.esEstrella(0, 0), isFalse);
     expect(juego.valoresDeZona(azul1), [1]);
     expect(juego.zonaLlena(azul1), isFalse);
     expect(juego.estaLleno, isFalse);

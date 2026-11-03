@@ -59,7 +59,7 @@ void main() {
 
   test('en modo individual eres el primero en llenar cada zona', () {
     final cubit = _individual();
-    final azul1 = estructuraNivel1.indiceZona[0][2];
+    final azul1 = nivel1.estructura.indiceZona[0][2];
 
     _jugar(cubit, 1, 2);
     _jugar(cubit, 1, 3);

@@ -77,7 +77,7 @@ void main() {
 
   group('Mapa 1', () {
     test('sigue con sus 9 zonas y la estructura de siempre', () {
-      expect(identical(estructuraNivel1, nivel1.estructura), isTrue);
+      expect(nivel1.estructura.zonas.length, 9);
       _verificarZonas(nivel1, {
         'Amarillo': 5,
         'Verde 1': 6,
