@@ -18,19 +18,24 @@ String nombreDe(Tipo tipo) {
   if (tipo is TipoAzul) return 'Azul';
   if (tipo is TipoVerde) return 'Verde';
   if (tipo is TipoAmarillo) return 'Amarillo';
+  if (tipo is TipoBlanco) return 'Blanco';
+  if (tipo is TipoNaranja) return 'Naranja ${tipo.minimo}-${tipo.maximo}';
   return 'Morado';
 }
 
-/// Una zona del tablero: su tipo y las casillas que la forman.
+/// Una zona del tablero: su tipo, las casillas que la forman y los puntos
+/// para el 1.º, 2.º y 3.º jugador que la llenen.
 class ZonaDef {
   final String nombre;
   final Tipo tipo;
   final List<(int, int)> celdas;
+  final List<int> puntos;
 
   const ZonaDef({
     required this.nombre,
     required this.tipo,
     required this.celdas,
+    required this.puntos,
   });
 }
 
@@ -44,24 +49,29 @@ class EstructuraTablero {
 
   const EstructuraTablero(this.zonas, this.indiceZona);
 
-  /// Agrupa las casillas vecinas del mismo color en una zona.
-  /// El amarillo es la excepción: todas sus casillas son una sola zona.
-  factory EstructuraTablero.desdeLayout(List<List<Tipo>> layout) {
+  /// Agrupa las casillas vecinas (arriba, abajo, izquierda, derecha) del
+  /// mismo tipo en una zona. Los tipos de [zonaUnica] son la excepción:
+  /// todas sus casillas forman una sola zona aunque estén separadas.
+  /// [puntos] da los puntos de cada tipo; si falta, se usa [puntosDe].
+  factory EstructuraTablero.desdeLayout(
+    List<List<Tipo>> layout, {
+    Set<Tipo> zonaUnica = const {Tipo.amarillo},
+    Map<Tipo, List<int>>? puntos,
+  }) {
     final filas = layout.length;
     final columnas = layout[0].length;
     final indice = List.generate(filas, (_) => List.filled(columnas, -1));
-    final zonas = <ZonaDef>[];
-    final contador = <Tipo, int>{};
+    final grupos = <(Tipo, List<(int, int)>)>[];
 
     for (var f = 0; f < filas; f++) {
       for (var c = 0; c < columnas; c++) {
         if (indice[f][c] != -1) continue;
 
         final tipo = layout[f][c];
-        final idx = zonas.length;
+        final idx = grupos.length;
         final celdas = <(int, int)>[];
 
-        if (tipo == Tipo.amarillo) {
+        if (zonaUnica.contains(tipo)) {
           for (var ff = 0; ff < filas; ff++) {
             for (var cc = 0; cc < columnas; cc++) {
               if (layout[ff][cc] == tipo) {
@@ -87,23 +97,125 @@ class EstructuraTablero {
           }
         }
 
-        final numero = (contador[tipo] ?? 0) + 1;
-        contador[tipo] = numero;
-        zonas.add(ZonaDef(
-          nombre: tipo == Tipo.amarillo
-              ? 'Amarillo'
-              : '${nombreDe(tipo)} $numero',
-          tipo: tipo,
-          celdas: celdas,
-        ));
+        grupos.add((tipo, celdas));
       }
+    }
+
+    // Se numera solo si hay más de una zona del mismo tipo.
+    final total = <Tipo, int>{};
+    for (final (tipo, _) in grupos) {
+      total[tipo] = (total[tipo] ?? 0) + 1;
+    }
+    final contador = <Tipo, int>{};
+    final zonas = <ZonaDef>[];
+    for (final (tipo, celdas) in grupos) {
+      final numero = (contador[tipo] ?? 0) + 1;
+      contador[tipo] = numero;
+      zonas.add(ZonaDef(
+        nombre: total[tipo] == 1
+            ? nombreDe(tipo)
+            : '${nombreDe(tipo)} $numero',
+        tipo: tipo,
+        celdas: celdas,
+        puntos: puntos?[tipo] ?? puntosDe(tipo),
+      ));
     }
     return EstructuraTablero(zonas, indice);
   }
 }
 
-final EstructuraTablero estructuraNivel1 =
-    EstructuraTablero.desdeLayout(layoutTableroNivel1);
+/// Un mapa del juego (en pantalla se muestra como "Mapa N").
+class Nivel {
+  final int numero;
+  final List<List<Tipo>> layout;
+
+  /// Las 6 casillas con estrella, en orden de lectura (fila por fila).
+  final List<PosicionCasilla> estrellas;
+
+  /// Las zonas del mapa, armadas una sola vez.
+  final EstructuraTablero estructura;
+
+  Nivel({
+    required this.numero,
+    required this.layout,
+    required this.estrellas,
+    required Set<Tipo> zonaUnica,
+    required Map<Tipo, List<int>> puntos,
+  }) : estructura = EstructuraTablero.desdeLayout(
+          layout,
+          zonaUnica: zonaUnica,
+          puntos: puntos,
+        );
+
+  bool esEstrella(int fila, int columna) =>
+      estrellas.any((p) => p.fila == fila && p.columna == columna);
+}
+
+final Nivel nivel1 = Nivel(
+  numero: 1,
+  layout: layoutTableroNivel1,
+  estrellas: casillasEstrella,
+  zonaUnica: {Tipo.amarillo},
+  puntos: {
+    Tipo.azul: [7, 5, 3],
+    Tipo.verde: [4, 3, 2],
+    Tipo.rojo: [6, 4, 2],
+    Tipo.morado: [6, 4, 2],
+    Tipo.amarillo: [8, 6, 4],
+  },
+);
+
+final Nivel nivel2 = Nivel(
+  numero: 2,
+  layout: layoutTableroNivel2,
+  estrellas: casillasEstrellaNivel2,
+  zonaUnica: {Tipo.amarillo, Tipo.blanco},
+  puntos: {
+    Tipo.azul: [7, 5, 3],
+    Tipo.verde: [4, 3, 2],
+    Tipo.rojo: [6, 4, 2],
+    Tipo.morado: [6, 4, 2],
+    Tipo.amarillo: [6, 4, 2],
+    Tipo.blanco: [3, 2, 1],
+  },
+);
+
+final Nivel nivel3 = Nivel(
+  numero: 3,
+  layout: layoutTableroNivel3,
+  estrellas: casillasEstrellaNivel3,
+  zonaUnica: {Tipo.blanco},
+  puntos: {
+    Tipo.azul: [7, 5, 3],
+    Tipo.verde: [6, 5, 4],
+    Tipo.rojo: [6, 4, 2],
+    Tipo.morado: [7, 5, 3],
+    Tipo.amarillo: [7, 5, 3],
+    Tipo.blanco: [8, 6, 4],
+  },
+);
+
+final Nivel nivel4 = Nivel(
+  numero: 4,
+  layout: layoutTableroNivel4,
+  estrellas: casillasEstrellaNivel4,
+  zonaUnica: {Tipo.amarillo, Tipo.azul, Tipo.verde},
+  puntos: {
+    Tipo.azul: [8, 6, 4],
+    Tipo.verde: [3, 2, 1],
+    Tipo.rojo: [6, 4, 2],
+    Tipo.morado: [7, 5, 3],
+    Tipo.amarillo: [8, 6, 4],
+    Tipo.naranja46: [6, 4, 3],
+    Tipo.naranja13: [6, 4, 3],
+  },
+);
+
+/// Los mapas que se pueden elegir, en orden.
+final List<Nivel> nivelesDisponibles = [nivel1, nivel2, nivel3, nivel4];
+
+/// Estructura del mapa 1 (se conserva para el código que aún la usa).
+final EstructuraTablero estructuraNivel1 = nivel1.estructura;
 
 /// El tablero de UN jugador durante la partida.
 class Juego extends Equatable {
