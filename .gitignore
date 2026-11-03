@@ -46,3 +46,12 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Servidor: secretos, bases de datos y archivos de Dart
+/servidor/.env
+/servidor/.dart_tool/
+/servidor/**/*.db
+/servidor/**/*.db-journal
+/servidor/**/*.db-wal
+/servidor/**/*.db-shm
+/servidor/**/*.sqlite
