@@ -26,6 +26,7 @@ variables de entorno del sistema tienen prioridad sobre el archivo.
 | `PUERTO` | `8080` | Puerto |
 | `MODO` | `desarrollo` | `desarrollo` o `produccion` |
 | `ORIGENES_PERMITIDOS` | vacío | Orígenes del navegador aceptados en producción, separados por comas |
+| `RUTA_BASE_DATOS` | `brilliant.db` | Archivo SQLite de las cuentas (ignorado por git) |
 
 ## Análisis y pruebas
 

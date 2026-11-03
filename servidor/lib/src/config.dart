@@ -39,6 +39,12 @@ Map<String, String> combinarEntorno({
 }) =>
     {...archivo, ...entorno};
 
+/// Valor de [clave] sin espacios, o null si falta o está vacío.
+String? _texto(Map<String, String> variables, String clave) {
+  final valor = variables[clave]?.trim();
+  return (valor == null || valor.isEmpty) ? null : valor;
+}
+
 /// Configuración del servidor.
 class Config {
   final String host;
@@ -49,11 +55,15 @@ class Config {
   final bool produccion;
   final List<String> origenesPermitidos;
 
+  /// Archivo SQLite con las cuentas.
+  final String rutaBaseDatos;
+
   const Config({
     this.host = '127.0.0.1',
     this.puerto = 8080,
     this.produccion = false,
     this.origenesPermitidos = const [],
+    this.rutaBaseDatos = 'brilliant.db',
   });
 
   /// Crea la configuración desde las variables (ya combinadas).
@@ -88,12 +98,11 @@ class Config {
     }
 
     return Config(
-      host: variables['HOST']?.trim().isNotEmpty == true
-          ? variables['HOST']!.trim()
-          : '127.0.0.1',
+      host: _texto(variables, 'HOST') ?? '127.0.0.1',
       puerto: puerto,
       produccion: produccion,
       origenesPermitidos: List.unmodifiable(origenes),
+      rutaBaseDatos: _texto(variables, 'RUTA_BASE_DATOS') ?? 'brilliant.db',
     );
   }
 
