@@ -458,7 +458,7 @@ class _ZonaDados extends StatelessWidget {
           : 'No hay jugadas posibles con estos dados';
     }
     if (estado.jugadasResaltadas.isEmpty) {
-      return 'Con ese ancla no hay lugar, prueba con el otro dado';
+      return 'Con esa ancla no hay lugar, prueba con el otro dado';
     }
     return 'Coloca el ${estado.aColocar} junto a un ${estado.ancla} '
         '(casillas iluminadas)';

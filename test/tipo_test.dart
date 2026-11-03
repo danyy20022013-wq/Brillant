@@ -34,7 +34,7 @@ void main() {
 
   test('Devuelve los puntos y la descripción', () {
     expect(Tipo.verde.puntuaciones[1], equals(4));
-    expect(Tipo.azul.descripcion, 'Todos los números deben de ser iguales');
+    expect(Tipo.azul.descripcion, 'Todos los números deben ser iguales');
   });
 
   test('Blanco acepta si todos son iguales', () {
@@ -42,7 +42,7 @@ void main() {
     expect(blanco.esPosibleAgregar([], 3), isTrue);
     expect(blanco.esPosibleAgregar([3, 3], 3), isTrue);
     expect(blanco.esPosibleAgregar([3, 3], 2), isFalse);
-    expect(Tipo.blanco.descripcion, 'Todos los números deben de ser iguales');
+    expect(Tipo.blanco.descripcion, 'Todos los números deben ser iguales (blanco)');
   });
 
   test('Naranja 4-6 solo acepta del 4 al 6, aunque se repitan', () {

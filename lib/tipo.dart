@@ -28,7 +28,7 @@ class TipoRojo extends Tipo {
   @override
   Color get color => const Color(0xFFE5484D);
   @override
-  String get descripcion => 'Todos los números deben de ser distintos';
+  String get descripcion => 'Todos los números deben ser distintos';
   @override
   Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
   @override
@@ -42,7 +42,7 @@ class TipoAmarillo extends Tipo {
   @override
   Color get color => const Color(0xFFF5B83D);
   @override
-  String get descripcion => 'Todos los números deben de ser distintos';
+  String get descripcion => 'Todos los números deben ser distintos';
   @override
   Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
   @override
@@ -69,7 +69,7 @@ class TipoAzul extends Tipo {
   @override
   Color get color => const Color(0xFF3E9BF0);
   @override
-  String get descripcion => 'Todos los números deben de ser iguales';
+  String get descripcion => 'Todos los números deben ser iguales';
   @override
   Map<int, int> get puntuaciones => {1: 10, 2: 8, 3: 6};
   @override
@@ -97,7 +97,7 @@ class TipoBlanco extends Tipo {
   @override
   Color get color => const Color(0xFFD9DCE3);
   @override
-  String get descripcion => 'Todos los números deben de ser iguales';
+  String get descripcion => 'Todos los números deben ser iguales (blanco)';
   @override
   Map<int, int> get puntuaciones => const {};
   @override

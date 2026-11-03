@@ -236,7 +236,7 @@ void main() {
 
       expect(_enTarjeta('Blanco', 'Blanco · 2 casillas'), findsOneWidget);
       expect(
-        _enTarjeta('Blanco', 'Todos los números deben de ser iguales'),
+        _enTarjeta('Blanco', 'Todos los números deben ser iguales (blanco)'),
         findsOneWidget,
       );
       expect(_enTarjeta('Blanco', '1.º 3   2.º 2   3.º 1'), findsOneWidget);
