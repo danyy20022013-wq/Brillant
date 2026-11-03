@@ -111,5 +111,6 @@ void main() {
     expect(cubit.state.hayDados, isFalse);
     expect(cubit.state.jugador, 1);
     expect(cubit.state.turno, 2);
+    expect(cubit.state.mensaje, 'J1 saltó el turno');
   });
 }

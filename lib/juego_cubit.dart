@@ -304,8 +304,8 @@ class JuegoCubit extends Cubit<JuegoEstado> {
       jugador: siguiente ?? state.jugador,
       turno: state.turno + 1,
       mensaje: state.esIndividual
-          ? 'Pasaste el turno'
-          : 'J${state.jugador + 1} pasó el turno',
+          ? 'Saltaste el turno'
+          : 'J${state.jugador + 1} saltó el turno',
       historial: state.conMovimiento(MovimientoRegistrado.salto(
         turno: state.turno,
         jugador: state.jugador,
