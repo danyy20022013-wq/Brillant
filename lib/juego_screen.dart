@@ -30,8 +30,36 @@ class JuegoScreen extends StatelessWidget {
   }
 }
 
-class _VistaJuego extends StatelessWidget {
+/// Duración del giro de los dados. Solo es visual: el valor lo decide el cubit.
+const duracionGiroDados = Duration(milliseconds: 500);
+
+class _VistaJuego extends StatefulWidget {
   const _VistaJuego();
+
+  @override
+  State<_VistaJuego> createState() => _VistaJuegoState();
+}
+
+class _VistaJuegoState extends State<_VistaJuego>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _giro =
+      AnimationController(vsync: this, duration: duracionGiroDados)
+        // Al empezar y al terminar se redibuja para bloquear/desbloquear.
+        ..addStatusListener((_) => setState(() {}));
+
+  bool get _girando => _giro.isAnimating;
+
+  @override
+  void dispose() {
+    _giro.dispose();
+    super.dispose();
+  }
+
+  /// El cubit decide los valores; la animación solo los muestra.
+  void _tirar() {
+    context.read<JuegoCubit>().tirarDados();
+    _giro.forward(from: 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +82,22 @@ class _VistaJuego extends StatelessWidget {
                       const SizedBox(height: 4),
                       _Marcadores(estado: estado),
                       const SizedBox(height: 8),
-                      _ZonaDados(estado: estado),
+                      _ZonaDados(estado: estado, giro: _giro),
                       const SizedBox(height: 8),
-                      Expanded(child: _TableroJuego(estado: estado)),
+                      Expanded(
+                        child: _TableroJuego(
+                          estado: estado,
+                          bloqueado: _girando,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       _PanelZonas(estado: estado),
                       const SizedBox(height: 8),
-                      _Botones(estado: estado),
+                      _Botones(
+                        estado: estado,
+                        girando: _girando,
+                        alTirar: _tirar,
+                      ),
                     ],
                   ),
                 ),
@@ -273,10 +310,16 @@ class _Marcador extends StatelessWidget {
 class _ZonaDados extends StatelessWidget {
   final JuegoEstado estado;
 
-  const _ZonaDados({required this.estado});
+  /// Avanza de 0 a 1 mientras los dados giran.
+  final Animation<double> giro;
+
+  const _ZonaDados({required this.estado, required this.giro});
+
+  bool get _girando => giro.isAnimating;
 
   String get _instruccion {
     if (estado.terminado) return 'Partida terminada';
+    if (_girando) return 'Tirando los dados…';
     if (!estado.hayDados) {
       return estado.esIndividual
           ? 'Tira los dados para empezar el turno'
@@ -299,33 +342,40 @@ class _ZonaDados extends StatelessWidget {
     return estado.indiceAncla == indice ? 'ANCLA' : 'A COLOCAR';
   }
 
+  /// Mientras gira, cada dado muestra caras que cambian y rota; al final
+  /// queda la cara con el valor que eligió el cubit.
+  Widget _dado(BuildContext context, int indice, int? valor) {
+    final cubit = context.read<JuegoCubit>();
+    final tocable = !_girando && !estado.terminado && estado.hayDados;
+
+    return AnimatedBuilder(
+      animation: giro,
+      builder: (context, _) {
+        final girando = giro.isAnimating;
+        final cara = girando
+            ? ((giro.value * 12).floor() + indice * 3) % 6 + 1
+            : valor;
+        return _Dado(
+          key: Key('dado-$indice'),
+          valor: cara,
+          angulo: girando ? giro.value * 4 * pi : 0,
+          etiqueta: girando ? '' : _etiqueta(indice),
+          esAncla: !girando && estado.indiceAncla == indice,
+          onTap: tocable ? () => cubit.elegirAncla(indice) : null,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<JuegoCubit>();
-
     return SizedBox(
       height: 76,
       child: Row(
         children: [
-          _Dado(
-            key: const Key('dado-0'),
-            valor: estado.dado1,
-            etiqueta: _etiqueta(0),
-            esAncla: estado.indiceAncla == 0,
-            onTap: estado.terminado || !estado.hayDados
-                ? null
-                : () => cubit.elegirAncla(0),
-          ),
+          _dado(context, 0, estado.dado1),
           const SizedBox(width: 10),
-          _Dado(
-            key: const Key('dado-1'),
-            valor: estado.dado2,
-            etiqueta: _etiqueta(1),
-            esAncla: estado.indiceAncla == 1,
-            onTap: estado.terminado || !estado.hayDados
-                ? null
-                : () => cubit.elegirAncla(1),
-          ),
+          _dado(context, 1, estado.dado2),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -364,12 +414,16 @@ class _Dado extends StatelessWidget {
   final bool esAncla;
   final VoidCallback? onTap;
 
+  /// Giro del dado en radianes (0 cuando está quieto).
+  final double angulo;
+
   const _Dado({
     super.key,
     required this.valor,
     required this.etiqueta,
     required this.esAncla,
     required this.onTap,
+    this.angulo = 0,
   });
 
   @override
@@ -379,7 +433,9 @@ class _Dado extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: onTap,
-          child: AnimatedContainer(
+          child: Transform.rotate(
+            angle: angulo,
+            child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             width: 54,
             height: 54,
@@ -412,6 +468,7 @@ class _Dado extends StatelessWidget {
                     ),
                   )
                 : _Puntos(valor: valor!),
+            ),
           ),
         ),
         const SizedBox(height: 2),
@@ -480,11 +537,15 @@ class _Puntos extends StatelessWidget {
 class _TableroJuego extends StatelessWidget {
   final JuegoEstado estado;
 
-  const _TableroJuego({required this.estado});
+  /// true mientras giran los dados: ninguna casilla se puede tocar.
+  final bool bloqueado;
+
+  const _TableroJuego({required this.estado, this.bloqueado = false});
 
   @override
   Widget build(BuildContext context) {
-    final resaltadas = estado.jugadasResaltadas;
+    final resaltadas =
+        bloqueado ? const <(int, int)>{} : estado.jugadasResaltadas;
     final ancla = estado.ancla;
     final tablero = estado.juego.tablero;
     final mapa = estado.nivel;
@@ -729,8 +790,41 @@ class _ChipZona extends StatelessWidget {
 
 class _Botones extends StatelessWidget {
   final JuegoEstado estado;
+  final bool girando;
+  final VoidCallback alTirar;
 
-  const _Botones({required this.estado});
+  const _Botones({
+    required this.estado,
+    required this.girando,
+    required this.alTirar,
+  });
+
+  /// Pide confirmación antes de saltar el turno; avisa si aún hay jugadas.
+  Future<void> _confirmarSaltar(BuildContext context) async {
+    final cubit = context.read<JuegoCubit>();
+    final aviso = estado.hayJugadas
+        ? 'Todavía tienes jugadas posibles. ¿Quieres saltar el turno?'
+        : 'No tienes jugadas posibles con estos dados.';
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (dialogo) => AlertDialog(
+        title: const Text('¿Saltar el turno?'),
+        content: Text(aviso),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogo).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogo).pop(true),
+            child: const Text('Saltar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado ?? false) cubit.pasarTurno();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -743,13 +837,10 @@ class _Botones extends StatelessWidget {
       accion = () => Navigator.of(context).popUntil((r) => r.isFirst);
     } else if (!estado.hayDados) {
       texto = 'Tirar dados';
-      accion = cubit.tirarDados;
-    } else if (!estado.hayJugadas) {
-      texto = 'Pasar turno';
-      accion = cubit.pasarTurno;
+      accion = alTirar;
     } else {
-      texto = 'Elige dado y casilla';
-      accion = null;
+      texto = 'Saltar turno';
+      accion = girando ? null : () => _confirmarSaltar(context);
     }
 
     return SizedBox(
