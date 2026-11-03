@@ -19,7 +19,8 @@ Handler crearAplicacion(
         ..get('/salud', (Request _) => respuestaJson(200, {'estado': 'ok'}))
         ..post('/registro', (Request p) => rutaRegistro(p, servicios))
         ..post('/sesion', (Request p) => rutaSesion(p, servicios))
-        ..get('/cuenta', (Request p) => rutaCuenta(p, servicios));
+        ..get('/cuenta', (Request p) => rutaCuenta(p, servicios))
+        ..delete('/cuenta', (Request p) => rutaBorrarCuenta(p, servicios));
 
   var pipeline = const Pipeline();
   if (registrar != null) {

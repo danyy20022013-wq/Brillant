@@ -145,3 +145,43 @@ Response rutaCuenta(Request peticion, Servicios servicios) {
   if (usuario == null) return respuestaSesionInvalida();
   return respuestaJson(200, {'usuario': usuario.aJsonPublico()});
 }
+
+/// DELETE /cuenta (con `Authorization: Bearer <token>`)
+///
+/// Cuerpo: `{"contrasena": "..."}`: se pide otra vez la contraseña para que
+/// un token robado no baste para borrar la cuenta.
+/// - 204 sin cuerpo: la cuenta se borró y sus tokens dejan de servir.
+/// - 401 si el token falta, no es válido o venció.
+/// - 403 si la contraseña no es la de la cuenta del token.
+/// - 429 tras 5 contraseñas incorrectas en 15 minutos para esa cuenta.
+Future<Response> rutaBorrarCuenta(Request peticion, Servicios servicios) async {
+  final usuario = usuarioDelToken(peticion, servicios);
+  if (usuario == null) return respuestaSesionInvalida();
+
+  final limitador = servicios.intentosSesion;
+  final clave = 'borrar-cuenta:${usuario.id}';
+  final falta = limitador.bloqueo(clave);
+  if (falta != null) return demasiadosIntentos(falta);
+
+  final Map<String, Object?> datos;
+  try {
+    datos = await leerJson(peticion);
+  } on CuerpoInvalido catch (e) {
+    return respuestaError(e.estado, e.mensaje);
+  }
+  final contrasena = campoTexto(datos, 'contrasena');
+  if (contrasena == null) return respuestaError(400, 'Datos inválidos');
+
+  final coincide = await servicios.contrasenas.verificar(
+    contrasena,
+    usuario.hash,
+  );
+  if (!coincide) {
+    limitador.registrar(clave);
+    return respuestaError(403, 'La contraseña no es correcta');
+  }
+
+  servicios.usuarios.borrar(usuario.id);
+  limitador.reiniciar(clave);
+  return Response(204);
+}
