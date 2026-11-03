@@ -10,6 +10,9 @@ abstract class Tipo {
   static const Tipo verde = TipoVerde();
   static const Tipo azul = TipoAzul();
   static const Tipo morado = TipoMorado();
+  static const Tipo blanco = TipoBlanco();
+  static const Tipo naranja46 = TipoNaranja(minimo: 4, maximo: 6);
+  static const Tipo naranja13 = TipoNaranja(minimo: 1, maximo: 3);
 
   Color get color;
   String get descripcion;
@@ -86,4 +89,37 @@ class TipoMorado extends Tipo {
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) =>
       {...actuales, posible}.length <= 2;
+}
+
+class TipoBlanco extends Tipo {
+  const TipoBlanco();
+
+  @override
+  Color get color => const Color(0xFFD9DCE3);
+  @override
+  String get descripcion => 'Todos los números deben de ser iguales';
+  @override
+  Map<int, int> get puntuaciones => const {};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) =>
+      actuales.isEmpty || actuales.every((n) => n == posible);
+}
+
+/// Naranja: solo acepta números entre [minimo] y [maximo] (incluidos),
+/// aunque se repitan.
+class TipoNaranja extends Tipo {
+  final int minimo;
+  final int maximo;
+
+  const TipoNaranja({required this.minimo, required this.maximo});
+
+  @override
+  Color get color => const Color(0xFFF28C28);
+  @override
+  String get descripcion => 'Solo números del $minimo al $maximo';
+  @override
+  Map<int, int> get puntuaciones => const {};
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) =>
+      posible >= minimo && posible <= maximo;
 }

@@ -3,10 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'juego.dart';
 import 'juego_screen.dart';
 import 'numeros_iniciales_cubit.dart';
 import 'reglas.dart';
-import 'tablero_layout.dart';
 import 'tipo.dart';
 
 const _fondo = Color(0xFF14162B);
@@ -17,11 +17,15 @@ class NumerosInicialesScreen extends StatelessWidget {
   final int totalJugadores;
   final List<List<int>> anteriores;
 
+  /// Mapa que se va a jugar (por defecto el 1).
+  final Nivel? nivel;
+
   const NumerosInicialesScreen({
     super.key,
     this.jugador = 1,
     this.totalJugadores = 1,
     this.anteriores = const [],
+    this.nivel,
   });
 
   @override
@@ -32,6 +36,7 @@ class NumerosInicialesScreen extends StatelessWidget {
         jugador: jugador,
         totalJugadores: totalJugadores,
         anteriores: anteriores,
+        mapa: nivel ?? nivelesDisponibles.first,
       ),
     );
   }
@@ -41,11 +46,13 @@ class _Vista extends StatelessWidget {
   final int jugador;
   final int totalJugadores;
   final List<List<int>> anteriores;
+  final Nivel mapa;
 
   const _Vista({
     required this.jugador,
     required this.totalJugadores,
     required this.anteriores,
+    required this.mapa,
   });
 
   @override
@@ -64,7 +71,14 @@ class _Vista extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const SizedBox(width: 48),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            tooltip: 'Volver',
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: Colors.white70,
+                            ),
+                          ),
                           const Expanded(
                             child: Center(
                               child: Text(
@@ -97,13 +111,21 @@ class _Vista extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                      Text(
+                        'Mapa ${mapa.numero}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       const Text(
                         'Toca una ⭐ y elige su número (1 al 6, sin repetir)',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                       const SizedBox(height: 10),
-                      Expanded(child: _Grilla(estado: estado)),
+                      Expanded(child: _Grilla(estado: estado, mapa: mapa)),
                       SizedBox(
                         height: 24,
                         child: Center(
@@ -148,12 +170,15 @@ class _Vista extends StatelessWidget {
             jugador: jugador + 1,
             totalJugadores: totalJugadores,
             anteriores: todos,
+            nivel: mapa,
           ),
         ),
       );
     } else {
       navigator.push(
-        MaterialPageRoute(builder: (_) => JuegoScreen(iniciales: todos)),
+        MaterialPageRoute(
+          builder: (_) => JuegoScreen(iniciales: todos, nivel: mapa),
+        ),
       );
     }
   }
@@ -162,11 +187,13 @@ class _Vista extends StatelessWidget {
 /// El tablero ocupa el espacio que sobra, como un cuadrado.
 class _Grilla extends StatelessWidget {
   final NumerosInicialesEstado estado;
+  final Nivel mapa;
 
-  const _Grilla({required this.estado});
+  const _Grilla({required this.estado, required this.mapa});
 
   @override
   Widget build(BuildContext context) {
+    final layout = mapa.layout;
     return LayoutBuilder(
       builder: (context, c) {
         final lado = max(0.0, min(c.maxWidth, c.maxHeight));
@@ -176,13 +203,11 @@ class _Grilla extends StatelessWidget {
             height: lado,
             child: Column(
               children: [
-                for (var f = 0; f < layoutTableroNivel1.length; f++)
+                for (var f = 0; f < layout.length; f++)
                   Expanded(
                     child: Row(
                       children: [
-                        for (var col = 0;
-                            col < layoutTableroNivel1[f].length;
-                            col++)
+                        for (var col = 0; col < layout[f].length; col++)
                           Expanded(child: _celda(f, col)),
                       ],
                     ),
@@ -197,14 +222,14 @@ class _Grilla extends StatelessWidget {
 
   Widget _celda(int fila, int columna) {
     int? indice;
-    for (var i = 0; i < casillasEstrella.length; i++) {
-      if (casillasEstrella[i].fila == fila &&
-          casillasEstrella[i].columna == columna) {
+    for (var i = 0; i < mapa.estrellas.length; i++) {
+      if (mapa.estrellas[i].fila == fila &&
+          mapa.estrellas[i].columna == columna) {
         indice = i;
       }
     }
     return _Casilla(
-      tipo: layoutTableroNivel1[fila][columna],
+      tipo: mapa.layout[fila][columna],
       indice: indice,
       valor: indice == null ? null : estado.valores[indice],
       repetida: indice != null && estado.casillaRepetida(indice),
@@ -228,6 +253,7 @@ class _Casilla extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final esEstrella = indice != null;
+    final textoOscuro = tipo is TipoBlanco;
 
     return Padding(
       padding: const EdgeInsets.all(2),
@@ -264,7 +290,9 @@ class _Casilla extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: repetida ? Colors.black : Colors.white,
+                                color: repetida || textoOscuro
+                                    ? Colors.black
+                                    : Colors.white,
                               ),
                             ),
                     ),
@@ -306,6 +334,8 @@ class _Casilla extends StatelessWidget {
                           padding: EdgeInsets.zero,
                           shape: const CircleBorder(),
                           backgroundColor: tipo.color,
+                          foregroundColor:
+                              textoOscuro ? Colors.black87 : Colors.white,
                         ),
                         onPressed: () => Navigator.of(context).pop(n),
                         child:

@@ -36,4 +36,58 @@ void main() {
     expect(Tipo.verde.puntuaciones[1], equals(4));
     expect(Tipo.azul.descripcion, 'Todos los números deben de ser iguales');
   });
+
+  test('Blanco acepta si todos son iguales', () {
+    const blanco = TipoBlanco();
+    expect(blanco.esPosibleAgregar([], 3), isTrue);
+    expect(blanco.esPosibleAgregar([3, 3], 3), isTrue);
+    expect(blanco.esPosibleAgregar([3, 3], 2), isFalse);
+    expect(Tipo.blanco.descripcion, 'Todos los números deben de ser iguales');
+  });
+
+  test('Naranja 4-6 solo acepta del 4 al 6, aunque se repitan', () {
+    const naranja = Tipo.naranja46;
+    for (final n in [4, 5, 6]) {
+      expect(naranja.esPosibleAgregar([], n), isTrue, reason: '$n');
+    }
+    expect(naranja.esPosibleAgregar([5, 5], 5), isTrue);
+    for (final n in [1, 2, 3]) {
+      expect(naranja.esPosibleAgregar([4], n), isFalse, reason: '$n');
+    }
+    expect(naranja.descripcion, 'Solo números del 4 al 6');
+  });
+
+  test('Naranja 1-3 solo acepta del 1 al 3, aunque se repitan', () {
+    const naranja = Tipo.naranja13;
+    for (final n in [1, 2, 3]) {
+      expect(naranja.esPosibleAgregar([], n), isTrue, reason: '$n');
+    }
+    expect(naranja.esPosibleAgregar([2, 2], 2), isTrue);
+    for (final n in [4, 5, 6]) {
+      expect(naranja.esPosibleAgregar([1], n), isFalse, reason: '$n');
+    }
+    expect(naranja.descripcion, 'Solo números del 1 al 3');
+  });
+
+  test('Los naranjas guardan su rango', () {
+    final n46 = Tipo.naranja46 as TipoNaranja;
+    final n13 = Tipo.naranja13 as TipoNaranja;
+    expect((n46.minimo, n46.maximo), (4, 6));
+    expect((n13.minimo, n13.maximo), (1, 3));
+  });
+
+  test('Los dos naranjas comparten color y los colores son todos distintos',
+      () {
+    expect(Tipo.naranja46.color, Tipo.naranja13.color);
+    final colores = [
+      Tipo.rojo,
+      Tipo.amarillo,
+      Tipo.verde,
+      Tipo.azul,
+      Tipo.morado,
+      Tipo.blanco,
+      Tipo.naranja46,
+    ].map((t) => t.color).toSet();
+    expect(colores.length, 7);
+  });
 }

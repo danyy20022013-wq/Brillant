@@ -93,6 +93,22 @@ class _ContenidoReglas extends StatelessWidget {
           const SizedBox(height: 12),
           for (final (tipo, nombre, _) in _colores)
             _FilaPuntos(tipo: tipo, nombre: nombre),
+          const _Seccion('Más mapas'),
+          const _Paso(
+            '•',
+            'Blanco (gris): todos los números iguales, como el azul. '
+                'Si sus casillas están separadas, forman una zona.',
+          ),
+          const _Paso(
+            '•',
+            'Naranja: la zona de arriba solo acepta números del 4 al 6 '
+                'y la de abajo del 1 al 3.',
+          ),
+          const _Paso(
+            '•',
+            'Los puntos de cada zona cambian según el mapa. '
+                'Míralos en el panel de zonas.',
+          ),
         ],
       ),
     );

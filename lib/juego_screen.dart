@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'juego.dart';
 import 'juego_cubit.dart';
 import 'reglas.dart';
-import 'tablero_layout.dart';
 import 'tipo.dart';
 
 const _fondo = Color(0xFF14162B);
@@ -17,12 +16,15 @@ class JuegoScreen extends StatelessWidget {
   /// Los 6 números iniciales de cada jugador.
   final List<List<int>> iniciales;
 
-  const JuegoScreen({super.key, required this.iniciales});
+  /// Mapa que se juega (por defecto el 1).
+  final Nivel? nivel;
+
+  const JuegoScreen({super.key, required this.iniciales, this.nivel});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => JuegoCubit(iniciales: iniciales),
+      create: (_) => JuegoCubit(iniciales: iniciales, nivel: nivel),
       child: const _VistaJuego(),
     );
   }
@@ -142,6 +144,11 @@ class _Encabezado extends StatelessWidget {
             fontWeight: FontWeight.w800,
             letterSpacing: 3,
           ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Mapa ${estado.nivel.numero}',
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
         ),
         Expanded(
           child: Align(
@@ -468,6 +475,8 @@ class _TableroJuego extends StatelessWidget {
     final resaltadas = estado.jugadasResaltadas;
     final ancla = estado.ancla;
     final tablero = estado.juego.tablero;
+    final mapa = estado.nivel;
+    final layout = mapa.layout;
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -478,22 +487,20 @@ class _TableroJuego extends StatelessWidget {
             height: lado,
             child: Column(
               children: [
-                for (var f = 0; f < layoutTableroNivel1.length; f++)
+                for (var f = 0; f < layout.length; f++)
                   Expanded(
                     child: Row(
                       children: [
-                        for (var col = 0;
-                            col < layoutTableroNivel1[f].length;
-                            col++)
+                        for (var col = 0; col < layout[f].length; col++)
                           Expanded(
                             child: _CeldaJuego(
                               key: Key('celda-$f-$col'),
-                              tipo: layoutTableroNivel1[f][col],
+                              tipo: layout[f][col],
                               valor: tablero[f][col],
                               resaltada: resaltadas.contains((f, col)),
                               esAncla:
                                   ancla != null && tablero[f][col] == ancla,
-                              esSemilla: Juego.esSemilla(f, col),
+                              esSemilla: mapa.esEstrella(f, col),
                               sugerido: estado.aColocar,
                               onTap: resaltadas.contains((f, col))
                                   ? () => context
@@ -536,22 +543,26 @@ class _CeldaJuego extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textoOscuro = tipo is TipoBlanco;
+
     Widget? texto;
     if (valor != null) {
       texto = Text(
         '$valor',
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: textoOscuro ? Colors.black87 : Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w800,
-          shadows: [Shadow(blurRadius: 2, color: Colors.black54)],
+          shadows: textoOscuro
+              ? null
+              : const [Shadow(blurRadius: 2, color: Colors.black54)],
         ),
       );
     } else if (resaltada && sugerido != null) {
       texto = Text(
         '$sugerido',
-        style: const TextStyle(
-          color: Colors.white70,
+        style: TextStyle(
+          color: textoOscuro ? Colors.black54 : Colors.white70,
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -605,7 +616,7 @@ class _CeldaJuego extends StatelessWidget {
   }
 }
 
-/// Las 9 zonas en dos filas de chips, con su próximo puntaje.
+/// Las zonas del mapa en filas de chips, con su próximo puntaje.
 class _PanelZonas extends StatelessWidget {
   final JuegoEstado estado;
 
@@ -613,7 +624,7 @@ class _PanelZonas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final zonas = estructuraNivel1.zonas;
+    final zonas = estado.nivel.estructura.zonas;
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -628,8 +639,7 @@ class _PanelZonas extends StatelessWidget {
                 width: ancho,
                 height: 40,
                 child: _ChipZona(
-                  nombre: zonas[i].nombre,
-                  tipo: zonas[i].tipo,
+                  zona: zonas[i],
                   orden: estado.ordenZonas[i],
                   individual: estado.esIndividual,
                 ),
@@ -642,23 +652,22 @@ class _PanelZonas extends StatelessWidget {
 }
 
 class _ChipZona extends StatelessWidget {
-  final String nombre;
-  final Tipo tipo;
+  final ZonaDef zona;
   final List<int> orden; // jugadores que la completaron, en orden
   final bool individual;
 
   const _ChipZona({
-    required this.nombre,
-    required this.tipo,
+    required this.zona,
     required this.orden,
     required this.individual,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tabla = puntosDe(tipo);
+    final tabla = zona.puntos;
     final proximo = orden.length < tabla.length ? tabla[orden.length] : 0;
-    final color = tipo is TipoAmarillo ? Colors.black87 : Colors.white;
+    final oscuro = zona.tipo is TipoAmarillo || zona.tipo is TipoBlanco;
+    final color = oscuro ? Colors.black87 : Colors.white;
 
     final String detalle;
     if (orden.isEmpty) {
@@ -672,7 +681,7 @@ class _ChipZona extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       decoration: BoxDecoration(
-        color: tipo.color,
+        color: zona.tipo.color,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -681,7 +690,7 @@ class _ChipZona extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              nombre,
+              zona.nombre,
               style: TextStyle(
                 color: color,
                 fontSize: 11,

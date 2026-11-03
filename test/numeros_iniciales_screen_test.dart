@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/main.dart';
+import 'package:juego_brilliant/juego.dart';
 import 'package:juego_brilliant/numeros_iniciales_screen.dart';
+
+/// La pantalla de números iniciales sin pasar por el inicio de sesión.
+class _App extends StatelessWidget {
+  const _App();
+
+  @override
+  Widget build(BuildContext context) =>
+      const MaterialApp(home: NumerosInicialesScreen());
+}
 
 // ───────────── ayudas ─────────────
 
@@ -46,7 +55,7 @@ void main() {
   group('Contenido inicial', () {
     testWidgets('muestra el título, la instrucción y el botón Inicio',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       expect(find.text('BRILLIANT'), findsOneWidget);
       expect(find.textContaining('Toca una'), findsOneWidget);
@@ -55,26 +64,42 @@ void main() {
     });
 
     testWidgets('tiene 6 casillas con estrella', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       expect(find.byIcon(Icons.star_rounded), findsNWidgets(6));
     });
 
+    testWidgets('muestra el mapa 1 por defecto', (tester) async {
+      await tester.pumpWidget(const _App());
+
+      expect(find.text('Mapa 1'), findsOneWidget);
+    });
+
+    for (final mapa in nivelesDisponibles) {
+      testWidgets('muestra el nombre del mapa ${mapa.numero}', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(home: NumerosInicialesScreen(nivel: mapa)),
+        );
+
+        expect(find.text('Mapa ${mapa.numero}'), findsOneWidget);
+      });
+    }
+
     testWidgets('en modo individual no muestra el número de jugador',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       expect(find.textContaining('Jugador'), findsNothing);
     });
 
     testWidgets('el botón Inicio empieza deshabilitado', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       expect(_botonInicio(tester).onPressed, isNull);
     });
 
     testWidgets('al inicio no hay aviso de números repetidos', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       expect(find.text('Los números no pueden repetirse'), findsNothing);
     });
@@ -83,7 +108,7 @@ void main() {
   group('Selector de números', () {
     testWidgets('al tocar una estrella abre el selector del 1 al 6',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await tester.tap(find.byIcon(Icons.star_rounded).first);
       await tester.pumpAndSettle();
@@ -95,7 +120,7 @@ void main() {
     });
 
     testWidgets('con la casilla vacía no ofrece quitar número', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await tester.tap(find.byIcon(Icons.star_rounded).first);
       await tester.pumpAndSettle();
@@ -105,7 +130,7 @@ void main() {
 
     testWidgets('elegir un número lo muestra en la casilla y cierra el selector',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await _elegir(tester, 3);
 
@@ -116,7 +141,7 @@ void main() {
 
     testWidgets('los números se asignan en orden a las 6 estrellas',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await _elegirTodos(tester, [6, 5, 4, 3, 2, 1]);
 
@@ -127,7 +152,7 @@ void main() {
     });
 
     testWidgets('cerrar el selector sin elegir no cambia nada', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
       await tester.tap(find.byIcon(Icons.star_rounded).first);
       await tester.pumpAndSettle();
 
@@ -139,7 +164,7 @@ void main() {
     });
 
     testWidgets('se puede cambiar un número ya elegido', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
       await _elegir(tester, 2);
 
       await tester.tap(find.text('2'));
@@ -152,7 +177,7 @@ void main() {
     });
 
     testWidgets('Quitar número devuelve la estrella', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
       await _elegir(tester, 3);
 
       await tester.tap(find.text('3'));
@@ -169,7 +194,7 @@ void main() {
 
   group('Reglas de los números', () {
     testWidgets('repetir un número avisa y deshabilita Inicio', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await _elegir(tester, 1);
       await _elegir(tester, 1);
@@ -179,7 +204,7 @@ void main() {
     });
 
     testWidgets('corregir el repetido quita el aviso', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
       await _elegir(tester, 1);
       await _elegir(tester, 1);
 
@@ -193,7 +218,7 @@ void main() {
 
     testWidgets('con menos de 6 números Inicio sigue deshabilitado',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await _elegirTodos(tester, [1, 2, 3, 4, 5]);
 
@@ -202,7 +227,7 @@ void main() {
     });
 
     testWidgets('con 6 números distintos Inicio se habilita', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await _elegirTodos(tester, [1, 2, 3, 4, 5, 6]);
 
@@ -213,7 +238,7 @@ void main() {
   group('Navegación', () {
     testWidgets('Inicio abre el juego con los números elegidos',
         (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
       await _elegirTodos(tester, [6, 5, 4, 3, 2, 1]);
 
       await tester.tap(find.text('Inicio'));
@@ -230,12 +255,43 @@ void main() {
     });
 
     testWidgets('el botón ? abre las reglas', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+      await tester.pumpWidget(const _App());
 
       await tester.tap(find.byIcon(Icons.help_outline_rounded));
       await tester.pumpAndSettle();
 
       expect(find.text('Reglas del juego'), findsOneWidget);
+    });
+
+    testWidgets('la flecha vuelve a la pantalla anterior', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NumerosInicialesScreen(),
+                    ),
+                  ),
+                  child: const Text('Abrir'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Abrir'));
+      await tester.pumpAndSettle();
+      expect(find.text('Inicio'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Volver'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Inicio'), findsNothing);
+      expect(find.text('Abrir'), findsOneWidget);
     });
   });
 
@@ -275,7 +331,7 @@ void main() {
 
       testWidgets('cabe en $nombre sin desbordarse', (tester) async {
         _pantalla(tester, tamano);
-        await tester.pumpWidget(const BrilliantApp());
+        await tester.pumpWidget(const _App());
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
