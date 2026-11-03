@@ -3,16 +3,6 @@ import 'package:equatable/equatable.dart';
 import 'tablero_layout.dart';
 import 'tipo.dart';
 
-/// Puntos según el orden en que los jugadores completan una zona
-/// (1.º, 2.º, 3.º). Después del tercero ya no puntúa.
-List<int> puntosDe(Tipo tipo) {
-  if (tipo is TipoRojo) return const [6, 4, 2];
-  if (tipo is TipoAzul) return const [7, 5, 3];
-  if (tipo is TipoVerde) return const [4, 3, 2];
-  if (tipo is TipoAmarillo) return const [8, 6, 4];
-  return const [6, 4, 2]; // morado
-}
-
 /// Nombre del tipo en pantalla. Tipo es "sealed": si se agrega un tipo
 /// nuevo y falta aquí, el compilador avisa.
 String nombreDe(Tipo tipo) => switch (tipo) {
@@ -54,11 +44,12 @@ class EstructuraTablero {
   /// Agrupa las casillas vecinas (arriba, abajo, izquierda, derecha) del
   /// mismo tipo en una zona. Los tipos de [zonaUnica] son la excepción:
   /// todas sus casillas forman una sola zona aunque estén separadas.
-  /// [puntos] da los puntos de cada tipo; si falta, se usa [puntosDe].
+  /// [puntos] da los puntos (1.º, 2.º, 3.º) de cada tipo del mapa; si falta
+  /// algún tipo del layout, lanza un ArgumentError.
   factory EstructuraTablero.desdeLayout(
     List<List<Tipo>> layout, {
     Set<Tipo> zonaUnica = const {Tipo.amarillo},
-    Map<Tipo, List<int>>? puntos,
+    required Map<Tipo, List<int>> puntos,
   }) {
     final filas = layout.length;
     final columnas = layout[0].length;
@@ -119,7 +110,8 @@ class EstructuraTablero {
             : '${nombreDe(tipo)} $numero',
         tipo: tipo,
         celdas: celdas,
-        puntos: puntos?[tipo] ?? puntosDe(tipo),
+        puntos: puntos[tipo] ??
+            (throw ArgumentError('Faltan los puntos de ${nombreDe(tipo)}')),
       ));
     }
     return EstructuraTablero(zonas, indice);
@@ -216,9 +208,6 @@ final Nivel nivel4 = Nivel(
 /// Los mapas que se pueden elegir, en orden.
 final List<Nivel> nivelesDisponibles = [nivel1, nivel2, nivel3, nivel4];
 
-/// Estructura del mapa 1 (se conserva para el código que aún la usa).
-final EstructuraTablero estructuraNivel1 = nivel1.estructura;
-
 /// El tablero de UN jugador durante la partida, en un mapa.
 class Juego extends Equatable {
   final List<List<int?>> tablero;
@@ -242,10 +231,6 @@ class Juego extends Equatable {
     }
     return Juego._(tablero, mapa);
   }
-
-  /// Casillas con estrella del mapa 1 (las pantallas usan Nivel.esEstrella).
-  static bool esSemilla(int fila, int columna) =>
-      casillasEstrella.any((p) => p.fila == fila && p.columna == columna);
 
   EstructuraTablero get _estructura => nivel.estructura;
 
