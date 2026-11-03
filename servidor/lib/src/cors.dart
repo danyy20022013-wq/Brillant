@@ -26,22 +26,20 @@ bool origenPermitido(
 /// - Pregunta previa de un origen no permitido: 403 sin cabeceras CORS.
 /// - Resto de peticiones: si el origen está permitido se agregan las
 ///   cabeceras; si no, la respuesta sale sin ellas y el navegador la bloquea.
-Middleware cors({
-  required bool produccion,
-  required List<String> permitidos,
-}) {
+Middleware cors({required bool produccion, required List<String> permitidos}) {
   Map<String, String> cabecerasPara(String origen) => {
-        'Access-Control-Allow-Origin': origen,
-        'Access-Control-Allow-Methods': _metodos,
-        'Access-Control-Allow-Headers': _cabeceras,
-        'Access-Control-Max-Age': '600',
-        'Vary': 'Origin',
-      };
+    'Access-Control-Allow-Origin': origen,
+    'Access-Control-Allow-Methods': _metodos,
+    'Access-Control-Allow-Headers': _cabeceras,
+    'Access-Control-Max-Age': '600',
+    'Vary': 'Origin',
+  };
 
   return (Handler interno) {
     return (Request peticion) async {
       final origen = peticion.headers['origin'];
-      final permitido = origen != null &&
+      final permitido =
+          origen != null &&
           origenPermitido(
             origen,
             produccion: produccion,

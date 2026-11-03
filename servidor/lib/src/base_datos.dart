@@ -22,10 +22,10 @@ class UsuarioGuardado {
 
   /// Lo que se le puede mostrar al cliente (sin el hash).
   Map<String, Object> aJsonPublico() => {
-        'id': id,
-        'nombre': nombre,
-        'correo': correo,
-      };
+    'id': id,
+    'nombre': nombre,
+    'correo': correo,
+  };
 }
 
 /// Ya existe una cuenta con ese correo.
@@ -99,16 +99,17 @@ class RepositorioUsuarios {
   }
 
   UsuarioGuardado? porCorreo(String correo) => _uno(
-        'SELECT * FROM usuarios WHERE correo = ?',
-        [normalizarCorreo(correo)],
-      );
+    'SELECT * FROM usuarios WHERE correo = ?',
+    [normalizarCorreo(correo)],
+  );
 
   UsuarioGuardado? porId(int id) =>
       _uno('SELECT * FROM usuarios WHERE id = ?', [id]);
 
-  bool existeNombre(String nombre) =>
-      _db.select('SELECT 1 FROM usuarios WHERE nombre = ?', [nombre.trim()])
-          .isNotEmpty;
+  bool existeNombre(String nombre) => _db.select(
+    'SELECT 1 FROM usuarios WHERE nombre = ?',
+    [nombre.trim()],
+  ).isNotEmpty;
 
   /// Borra la cuenta. Devuelve false si no existía.
   bool borrar(int id) {

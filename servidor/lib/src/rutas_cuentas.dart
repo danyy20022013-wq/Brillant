@@ -1,10 +1,26 @@
 import 'package:shelf/shelf.dart';
 
+import 'autenticacion.dart';
 import 'base_datos.dart';
+import 'limitador.dart';
 import 'peticiones.dart';
 import 'respuestas.dart';
 import 'servicios.dart';
 import 'validacion.dart';
+
+/// Mensaje único para un inicio de sesión fallido, exista o no el correo.
+const mensajeCredencialesIncorrectas = 'Correo o contraseña incorrectos';
+
+/// 429 con Retry-After y un mensaje en minutos.
+Response demasiadosIntentos(Duration falta) {
+  final minutos = (falta.inSeconds / 60).ceil();
+  return respuestaError(
+    429,
+    'Demasiados intentos. Prueba de nuevo en '
+    '${minutos <= 1 ? '1 minuto' : '$minutos minutos'}.',
+    cabeceras: {'retry-after': segundosParaReintentar(falta)},
+  );
+}
 
 /// POST /registro
 ///
@@ -12,7 +28,16 @@ import 'validacion.dart';
 /// - 201 con `{"usuario": {"id", "nombre", "correo"}}`.
 /// - 400 si los datos no son válidos (con el mismo mensaje que la app).
 /// - 409 si el correo o el nombre ya existen.
+/// - 429 si esa IP ya hizo demasiados intentos de registro.
+///
+/// No entrega token: la app inicia sesión después con POST /sesion.
 Future<Response> rutaRegistro(Request peticion, Servicios servicios) async {
+  final claveIp = 'registro-ip:${ipDe(peticion)}';
+  final limitador = servicios.intentosRegistro;
+  final falta = limitador.bloqueo(claveIp);
+  if (falta != null) return demasiadosIntentos(falta);
+  limitador.registrar(claveIp);
+
   final Map<String, Object?> datos;
   try {
     datos = await leerJson(peticion);
@@ -24,7 +49,8 @@ Future<Response> rutaRegistro(Request peticion, Servicios servicios) async {
   final correo = campoTexto(datos, 'correo');
   final contrasena = campoTexto(datos, 'contrasena');
 
-  final error = validarNombre(nombre) ??
+  final error =
+      validarNombre(nombre) ??
       validarCorreo(correo) ??
       validarContrasena(contrasena);
   if (error != null) return respuestaError(400, error);
@@ -54,4 +80,68 @@ Future<Response> rutaRegistro(Request peticion, Servicios servicios) async {
   } on NombreDuplicado {
     return respuestaError(409, 'Ese nombre de usuario ya está en uso');
   }
+}
+
+/// POST /sesion
+///
+/// Cuerpo: `{"correo": "...", "contrasena": "..."}`.
+/// - 200 con `{"token", "expiraEn", "usuario"}`.
+/// - 401 con el mismo mensaje, cabeceras y tiempo aproximado tanto si el
+///   correo no existe como si la contraseña es incorrecta.
+/// - 429 tras 5 fallos en 15 minutos del mismo correo o de la misma IP.
+Future<Response> rutaSesion(Request peticion, Servicios servicios) async {
+  final Map<String, Object?> datos;
+  try {
+    datos = await leerJson(peticion);
+  } on CuerpoInvalido catch (e) {
+    return respuestaError(e.estado, e.mensaje);
+  }
+  final correo = campoTexto(datos, 'correo');
+  final contrasena = campoTexto(datos, 'contrasena');
+  if (correo == null || contrasena == null) {
+    return respuestaError(400, 'Datos inválidos');
+  }
+
+  final limitador = servicios.intentosSesion;
+  final claveCorreo =
+      'sesion-correo:${RepositorioUsuarios.normalizarCorreo(correo)}';
+  final claveIp = 'sesion-ip:${ipDe(peticion)}';
+  final faltas = [
+    limitador.bloqueo(claveCorreo),
+    limitador.bloqueo(claveIp),
+  ].whereType<Duration>().toList();
+  if (faltas.isNotEmpty) {
+    return demasiadosIntentos(faltas.reduce((a, b) => a > b ? a : b));
+  }
+
+  // Si el correo no existe se compara igual contra un hash de relleno, para
+  // que la respuesta tarde lo mismo.
+  final usuario = servicios.usuarios.porCorreo(correo);
+  final hash = usuario?.hash ?? await servicios.contrasenas.hashDeRelleno;
+  final coincide = await servicios.contrasenas.verificar(contrasena, hash);
+
+  if (usuario == null || !coincide) {
+    limitador
+      ..registrar(claveCorreo)
+      ..registrar(claveIp);
+    return respuestaError(401, mensajeCredencialesIncorrectas);
+  }
+
+  limitador.reiniciar(claveCorreo);
+  final emitido = servicios.tokens.emitir(usuario.id);
+  return respuestaJson(200, {
+    'token': emitido.token,
+    'expiraEn': emitido.expiraEn.toIso8601String(),
+    'usuario': usuario.aJsonPublico(),
+  });
+}
+
+/// GET /cuenta (con `Authorization: Bearer <token>`)
+///
+/// - 200 con `{"usuario"}`: sirve para que la app restaure la sesión.
+/// - 401 si el token falta, no es válido, venció o la cuenta se borró.
+Response rutaCuenta(Request peticion, Servicios servicios) {
+  final usuario = usuarioDelToken(peticion, servicios);
+  if (usuario == null) return respuestaSesionInvalida();
+  return respuestaJson(200, {'usuario': usuario.aJsonPublico()});
 }

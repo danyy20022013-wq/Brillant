@@ -31,8 +31,10 @@ void main() {
       expect(guardado.hash, hasLength(60));
       expect(guardado.hash, isNot(contains('secreta1')));
       expect(
-        await servidor.servicios.contrasenas
-            .verificar('secreta1', guardado.hash),
+        await servidor.servicios.contrasenas.verificar(
+          'secreta1',
+          guardado.hash,
+        ),
         isTrue,
       );
     });
@@ -81,47 +83,47 @@ void main() {
     final casos = <String, (Map<String, Object?>, String)>{
       'sin nombre': (
         {'correo': 'a@b.co', 'contrasena': 'secreta1'},
-        'Escribe tu nombre de usuario'
+        'Escribe tu nombre de usuario',
       ),
       'nombre corto': (
         {'nombre': 'ab', 'correo': 'a@b.co', 'contrasena': 'secreta1'},
-        'Mínimo 3 caracteres'
+        'Mínimo 3 caracteres',
       ),
       'nombre largo': (
         {'nombre': 'a' * 17, 'correo': 'a@b.co', 'contrasena': 'secreta1'},
-        'Máximo 16 caracteres'
+        'Máximo 16 caracteres',
       ),
       'nombre con símbolos': (
         {'nombre': 'dany!', 'correo': 'a@b.co', 'contrasena': 'secreta1'},
-        'Solo letras, números y _'
+        'Solo letras, números y _',
       ),
       'sin correo': (
         {'nombre': 'dany', 'contrasena': 'secreta1'},
-        'Escribe tu correo'
+        'Escribe tu correo',
       ),
       'correo mal escrito': (
         {'nombre': 'dany', 'correo': 'dany@', 'contrasena': 'secreta1'},
-        'Correo no válido'
+        'Correo no válido',
       ),
       'sin contraseña': (
         {'nombre': 'dany', 'correo': 'a@b.co'},
-        'Escribe tu contraseña'
+        'Escribe tu contraseña',
       ),
       'contraseña corta': (
         {'nombre': 'dany', 'correo': 'a@b.co', 'contrasena': '12345'},
-        'Mínimo 6 caracteres'
+        'Mínimo 6 caracteres',
       ),
       'contraseña de 73 bytes': (
         {'nombre': 'dany', 'correo': 'a@b.co', 'contrasena': 'a' * 73},
-        'Máximo 72 bytes (las tildes y la ñ ocupan 2)'
+        'Máximo 72 bytes (las tildes y la ñ ocupan 2)',
       ),
       'contraseña de 37 eñes (74 bytes)': (
         {'nombre': 'dany', 'correo': 'a@b.co', 'contrasena': 'ñ' * 37},
-        'Máximo 72 bytes (las tildes y la ñ ocupan 2)'
+        'Máximo 72 bytes (las tildes y la ñ ocupan 2)',
       ),
       'campos que no son texto': (
         {'nombre': 123, 'correo': true, 'contrasena': null},
-        'Escribe tu nombre de usuario'
+        'Escribe tu nombre de usuario',
       ),
     };
 
@@ -158,7 +160,7 @@ void main() {
   });
 
   group('Contraseñas (bcrypt)', () {
-    const contrasenas = Contrasenas(costo: costoDePrueba);
+    final contrasenas = Contrasenas(costo: costoDePrueba);
 
     test('hashea, verifica la correcta y rechaza otra', () async {
       final hash = await contrasenas.hashear('secreta1');
@@ -179,27 +181,40 @@ void main() {
       expect(hash.substring(4, 7), r'04$');
     });
 
-    test('un hash dañado o una contraseña larga dan false, sin lanzar',
-        () async {
-      final hash = await contrasenas.hashear('secreta1');
-      expect(await contrasenas.verificar('secreta1', 'no-es-un-hash'), isFalse);
-      expect(await contrasenas.verificar('a' * 73, hash), isFalse);
-      expect(() => contrasenas.hashear('a' * 73), throwsArgumentError);
-    });
+    test(
+      'un hash dañado o una contraseña larga dan false, sin lanzar',
+      () async {
+        final hash = await contrasenas.hashear('secreta1');
+        expect(
+          await contrasenas.verificar('secreta1', 'no-es-un-hash'),
+          isFalse,
+        );
+        expect(await contrasenas.verificar('a' * 73, hash), isFalse);
+        expect(() => contrasenas.hashear('a' * 73), throwsArgumentError);
+      },
+    );
   });
 
   group('COSTO_BCRYPT', () {
     test('por defecto 10, y se puede cambiar', () {
-      expect(Config.desde({}).costoBcrypt, 10);
-      expect(Config.desde({'COSTO_BCRYPT': '12'}).costoBcrypt, 12);
+      expect(Config.desde(variablesMinimas).costoBcrypt, 10);
+      expect(
+        Config.desde({...variablesMinimas, 'COSTO_BCRYPT': '12'}).costoBcrypt,
+        12,
+      );
     });
 
     test('fuera de rango no deja arrancar', () {
       for (final valor in ['3', '16', 'diez']) {
         expect(
-          () => Config.desde({'COSTO_BCRYPT': valor}),
-          throwsA(isA<ConfigException>()
-              .having((e) => e.mensaje, 'mensaje', contains('COSTO_BCRYPT'))),
+          () => Config.desde({...variablesMinimas, 'COSTO_BCRYPT': valor}),
+          throwsA(
+            isA<ConfigException>().having(
+              (e) => e.mensaje,
+              'mensaje',
+              contains('COSTO_BCRYPT'),
+            ),
+          ),
         );
       }
     });
@@ -207,6 +222,7 @@ void main() {
     test('en producción debe ser al menos 10', () {
       expect(
         () => Config.desde({
+          ...variablesMinimas,
           'MODO': 'produccion',
           'ORIGENES_PERMITIDOS': 'https://a.com',
           'COSTO_BCRYPT': '8',

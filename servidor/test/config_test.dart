@@ -1,6 +1,8 @@
 import 'package:servidor_brilliant/servidor_brilliant.dart';
 import 'package:test/test.dart';
 
+import 'ayuda.dart';
+
 void main() {
   group('Archivo .env', () {
     test('lee CLAVE=valor e ignora comentarios y líneas vacías', () {
@@ -37,7 +39,7 @@ VACIA=
 
   group('Config', () {
     test('valores por defecto: desarrollo en 127.0.0.1:8080', () {
-      final config = Config.desde({});
+      final config = Config.desde(variablesMinimas);
       expect(config.host, '127.0.0.1');
       expect(config.puerto, 8080);
       expect(config.produccion, isFalse);
@@ -46,6 +48,7 @@ VACIA=
 
     test('lee puerto, modo y orígenes', () {
       final config = Config.desde({
+        ...variablesMinimas,
         'PUERTO': '9000',
         'MODO': 'produccion',
         'ORIGENES_PERMITIDOS': ' https://a.com , https://b.com ,',
@@ -58,10 +61,13 @@ VACIA=
     test('un puerto inválido no deja arrancar y explica por qué', () {
       for (final valor in ['abc', '0', '70000']) {
         expect(
-          () => Config.desde({'PUERTO': valor}),
+          () => Config.desde({...variablesMinimas, 'PUERTO': valor}),
           throwsA(
-            isA<ConfigException>()
-                .having((e) => e.mensaje, 'mensaje', contains('PUERTO')),
+            isA<ConfigException>().having(
+              (e) => e.mensaje,
+              'mensaje',
+              contains('PUERTO'),
+            ),
           ),
         );
       }
@@ -69,17 +75,27 @@ VACIA=
 
     test('un modo desconocido no deja arrancar', () {
       expect(
-        () => Config.desde({'MODO': 'pruebas'}),
-        throwsA(isA<ConfigException>()
-            .having((e) => e.mensaje, 'mensaje', contains('MODO'))),
+        () => Config.desde({...variablesMinimas, 'MODO': 'pruebas'}),
+        throwsA(
+          isA<ConfigException>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            contains('MODO'),
+          ),
+        ),
       );
     });
 
     test('producción sin orígenes no deja arrancar', () {
       expect(
-        () => Config.desde({'MODO': 'produccion'}),
-        throwsA(isA<ConfigException>().having(
-            (e) => e.mensaje, 'mensaje', contains('ORIGENES_PERMITIDOS'))),
+        () => Config.desde({...variablesMinimas, 'MODO': 'produccion'}),
+        throwsA(
+          isA<ConfigException>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            contains('ORIGENES_PERMITIDOS'),
+          ),
+        ),
       );
     });
   });

@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   bcrypt: ^1.2.0
+  dart_jsonwebtoken: ^3.4.1
   shelf: ^1.4.3
   shelf_router: ^1.1.5
   sqlite3: ^3.8.0

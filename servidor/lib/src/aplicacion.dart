@@ -14,11 +14,12 @@ Handler crearAplicacion(
   Servicios servicios, {
   void Function(String)? registrar,
 }) {
-  final rutas = Router(
-    notFoundHandler: (_) => respuestaError(404, 'Ruta no encontrada'),
-  )
-    ..get('/salud', (Request _) => respuestaJson(200, {'estado': 'ok'}))
-    ..post('/registro', (Request p) => rutaRegistro(p, servicios));
+  final rutas =
+      Router(notFoundHandler: (_) => respuestaError(404, 'Ruta no encontrada'))
+        ..get('/salud', (Request _) => respuestaJson(200, {'estado': 'ok'}))
+        ..post('/registro', (Request p) => rutaRegistro(p, servicios))
+        ..post('/sesion', (Request p) => rutaSesion(p, servicios))
+        ..get('/cuenta', (Request p) => rutaCuenta(p, servicios));
 
   var pipeline = const Pipeline();
   if (registrar != null) {
@@ -34,4 +35,3 @@ Handler crearAplicacion(
       .addMiddleware(manejarErrores(registrar: registrar))
       .addHandler(rutas.call);
 }
-

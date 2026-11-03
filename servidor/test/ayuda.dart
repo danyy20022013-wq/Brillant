@@ -7,6 +7,12 @@ import 'package:shelf/shelf.dart';
 /// Costo bajo para que las pruebas sean rápidas (en producción es 10+).
 const costoDePrueba = 4;
 
+/// Clave falsa, solo para las pruebas (no se usa en ningún servidor real).
+const secretoDePrueba = 'clave-falsa-solo-para-pruebas-0123456789';
+
+/// Variables mínimas para que Config.desde no falle.
+const variablesMinimas = {'JWT_SECRETO': secretoDePrueba};
+
 /// Reloj que las pruebas pueden adelantar sin esperar.
 class RelojDePrueba {
   DateTime ahora = DateTime.utc(2026, 11, 3, 12);
@@ -52,7 +58,8 @@ class ServidorDePrueba {
   ServidorDePrueba({Config config = const Config()}) {
     servicios = Servicios(
       usuarios: usuarios,
-      contrasenas: const Contrasenas(costo: costoDePrueba),
+      contrasenas: Contrasenas(costo: costoDePrueba),
+      secretoJwt: secretoDePrueba,
       reloj: reloj.call,
     );
     handler = crearAplicacion(config, servicios);
@@ -68,17 +75,21 @@ class ServidorDePrueba {
     String ip = '10.0.0.1',
     Map<String, String> cabeceras = const {},
   }) async {
-    final respuesta = await handler(Request(
-      metodo,
-      Uri.parse('http://localhost$ruta'),
-      body: cuerpo is String ? cuerpo : (cuerpo == null ? null : jsonEncode(cuerpo)),
-      headers: {
-        if (cuerpo != null) 'content-type': 'application/json',
-        if (token != null) 'authorization': 'Bearer $token',
-        ...cabeceras,
-      },
-      context: {'shelf.io.connection_info': _Conexion(ip)},
-    ));
+    final respuesta = await handler(
+      Request(
+        metodo,
+        Uri.parse('http://localhost$ruta'),
+        body: cuerpo is String
+            ? cuerpo
+            : (cuerpo == null ? null : jsonEncode(cuerpo)),
+        headers: {
+          if (cuerpo != null) 'content-type': 'application/json',
+          if (token != null) 'authorization': 'Bearer $token',
+          ...cabeceras,
+        },
+        context: {'shelf.io.connection_info': _Conexion(ip)},
+      ),
+    );
     final texto = await respuesta.readAsString();
     return Respuesta(
       respuesta.statusCode,
@@ -92,12 +103,12 @@ class ServidorDePrueba {
     String correo = 'dany@correo.com',
     String contrasena = 'secreta1',
     String ip = '10.0.0.1',
-  }) =>
-      pedir('POST', '/registro', ip: ip, cuerpo: {
-        'nombre': nombre,
-        'correo': correo,
-        'contrasena': contrasena,
-      });
+  }) => pedir(
+    'POST',
+    '/registro',
+    ip: ip,
+    cuerpo: {'nombre': nombre, 'correo': correo, 'contrasena': contrasena},
+  );
 
   void cerrar() => usuarios.cerrar();
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:math';
 
 import 'package:bcrypt/bcrypt.dart';
 
@@ -13,7 +14,16 @@ class Contrasenas {
   /// Costo de bcrypt (log2 de las rondas). Cada +1 duplica el tiempo.
   final int costo;
 
-  const Contrasenas({required this.costo});
+  Contrasenas({required this.costo});
+
+  /// Hash de una contraseña al azar, con el mismo costo. El inicio de
+  /// sesión lo compara cuando el correo no existe, para tardar lo mismo
+  /// que con un correo real y no revelar cuáles existen.
+  late final Future<String> hashDeRelleno = hashear(
+    List.generate(24, (_) => _random.nextInt(36).toRadixString(36)).join(),
+  );
+
+  static final _random = Random.secure();
 
   /// Hash bcrypt de [contrasena]. La sal sale de Random.secure().
   Future<String> hashear(String contrasena) {

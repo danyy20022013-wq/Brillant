@@ -9,12 +9,11 @@ Response respuestaJson(
   int estado,
   Object cuerpo, {
   Map<String, String> cabeceras = const {},
-}) =>
-    Response(
-      estado,
-      body: jsonEncode(cuerpo),
-      headers: {..._json, ...cabeceras},
-    );
+}) => Response(
+  estado,
+  body: jsonEncode(cuerpo),
+  headers: {..._json, ...cabeceras},
+);
 
 /// Error con un mensaje en español pensado para mostrarse al jugador.
 /// Nunca lleva detalles internos.
@@ -22,8 +21,7 @@ Response respuestaError(
   int estado,
   String mensaje, {
   Map<String, String> cabeceras = const {},
-}) =>
-    respuestaJson(estado, {'error': mensaje}, cabeceras: cabeceras);
+}) => respuestaJson(estado, {'error': mensaje}, cabeceras: cabeceras);
 
 /// Atrapa cualquier error inesperado: responde 500 con un mensaje genérico y
 /// registra solo el tipo de error (nunca datos de la petición).
@@ -36,8 +34,10 @@ Middleware manejarErrores({void Function(String)? registrar}) {
       } on HijackException {
         rethrow;
       } catch (e) {
-        log('Error interno (${e.runtimeType}) en '
-            '${peticion.method} /${peticion.url.path}');
+        log(
+          'Error interno (${e.runtimeType}) en '
+          '${peticion.method} /${peticion.url.path}',
+        );
         return respuestaError(500, 'Error interno del servidor');
       }
     };
@@ -52,8 +52,10 @@ Middleware registrarPeticiones(void Function(String) registrar) {
       final inicio = DateTime.now();
       final respuesta = await interno(peticion);
       final ms = DateTime.now().difference(inicio).inMilliseconds;
-      registrar('${peticion.method} /${peticion.url.path} '
-          '${respuesta.statusCode} ${ms}ms');
+      registrar(
+        '${peticion.method} /${peticion.url.path} '
+        '${respuesta.statusCode} ${ms}ms',
+      );
       return respuesta;
     };
   };

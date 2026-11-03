@@ -3,19 +3,20 @@ import 'dart:io';
 import 'package:servidor_brilliant/servidor_brilliant.dart';
 import 'package:test/test.dart';
 
+import 'ayuda.dart';
+
 final _fecha = DateTime.utc(2026, 11, 3, 12);
 
 UsuarioGuardado _crear(
   RepositorioUsuarios repo, {
   String nombre = 'dany',
   String correo = 'dany@correo.com',
-}) =>
-    repo.crear(
-      nombre: nombre,
-      correo: correo,
-      hash: r'$2b$04$hash-de-prueba',
-      creadoEn: _fecha,
-    );
+}) => repo.crear(
+  nombre: nombre,
+  correo: correo,
+  hash: r'$2b$04$hash-de-prueba',
+  creadoEn: _fecha,
+);
 
 void main() {
   late RepositorioUsuarios repo;
@@ -122,9 +123,12 @@ void main() {
   });
 
   test('la configuración lee RUTA_BASE_DATOS', () {
-    expect(Config.desde({}).rutaBaseDatos, 'brilliant.db');
+    expect(Config.desde(variablesMinimas).rutaBaseDatos, 'brilliant.db');
     expect(
-      Config.desde({'RUTA_BASE_DATOS': ' datos/cuentas.db '}).rutaBaseDatos,
+      Config.desde({
+        ...variablesMinimas,
+        'RUTA_BASE_DATOS': ' datos/cuentas.db ',
+      }).rutaBaseDatos,
       'datos/cuentas.db',
     );
   });
