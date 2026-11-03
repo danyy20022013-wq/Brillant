@@ -17,17 +17,24 @@ Future<void> main() async {
     return;
   }
 
-  final handler = crearAplicacion(config, registrar: _log);
+  final usuarios = RepositorioUsuarios.abrir(config.rutaBaseDatos);
+  final servicios = Servicios(
+    usuarios: usuarios,
+    contrasenas: Contrasenas(costo: config.costoBcrypt),
+  );
+
+  final handler = crearAplicacion(config, servicios, registrar: _log);
   final servidor = await shelf_io.serve(handler, config.host, config.puerto);
   _log('Servidor de Brilliant escuchando en '
       'http://${servidor.address.host}:${servidor.port} '
       '(${config.produccion ? 'producción' : 'desarrollo'})');
 
-  // Ctrl+C cierra el servidor de forma ordenada.
+  // Ctrl+C cierra el servidor y la base de datos de forma ordenada.
   late final StreamSubscription<ProcessSignal> senal;
   senal = ProcessSignal.sigint.watch().listen((_) async {
     _log('Cerrando el servidor…');
     await servidor.close();
+    usuarios.cerrar();
     await senal.cancel();
   });
 }

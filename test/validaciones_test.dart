@@ -40,6 +40,21 @@ void main() {
       expect(validarContrasena('12345'), 'Mínimo 6 caracteres');
       expect(validarContrasena('123456'), isNull);
     });
+
+    test('acepta hasta 72 bytes en UTF-8', () {
+      expect(validarContrasena('a' * 72), isNull);
+      expect(validarContrasena('ñ' * 36), isNull); // 36 × 2 = 72 bytes
+      expect(maximoBytesContrasena, 72);
+    });
+
+    test('rechaza más de 72 bytes, contando bytes y no letras', () {
+      const mensaje = 'Máximo 72 bytes (las tildes y la ñ ocupan 2)';
+      expect(validarContrasena('a' * 73), mensaje);
+      // 37 letras pero 74 bytes.
+      expect(validarContrasena('ñ' * 37), mensaje);
+      // 71 letras ASCII + una tilde = 73 bytes.
+      expect(validarContrasena('${'a' * 71}é'), mensaje);
+    });
   });
 
   group('validarConfirmacion', () {

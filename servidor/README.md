@@ -1,7 +1,7 @@
 # Servidor de Brilliant
 
 Servidor de cuentas para la app Brilliant, escrito en Dart con `shelf`.
-Por ahora solo tiene la base: configuración, CORS y `GET /salud`.
+Por ahora tiene configuración, CORS, `GET /salud` y `POST /registro`.
 
 ## Ejecutar
 
@@ -27,6 +27,7 @@ variables de entorno del sistema tienen prioridad sobre el archivo.
 | `MODO` | `desarrollo` | `desarrollo` o `produccion` |
 | `ORIGENES_PERMITIDOS` | vacío | Orígenes del navegador aceptados en producción, separados por comas |
 | `RUTA_BASE_DATOS` | `brilliant.db` | Archivo SQLite de las cuentas (ignorado por git) |
+| `COSTO_BCRYPT` | `10` | Costo de bcrypt (4 a 15; en producción, al menos 10) |
 
 ## Análisis y pruebas
 

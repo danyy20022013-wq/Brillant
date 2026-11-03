@@ -58,13 +58,24 @@ class Config {
   /// Archivo SQLite con las cuentas.
   final String rutaBaseDatos;
 
+  /// Costo de bcrypt. 10 tarda unos 200 ms en el equipo de desarrollo.
+  final int costoBcrypt;
+
   const Config({
     this.host = '127.0.0.1',
     this.puerto = 8080,
     this.produccion = false,
     this.origenesPermitidos = const [],
     this.rutaBaseDatos = 'brilliant.db',
+    this.costoBcrypt = costoBcryptPorDefecto,
   });
+
+  static const costoBcryptPorDefecto = 10;
+
+  /// Rango permitido: menos de 10 es débil en producción, pero sirve en
+  /// pruebas; más de 15 tarda varios segundos por inicio de sesión.
+  static const costoBcryptMinimo = 4;
+  static const costoBcryptMaximo = 15;
 
   /// Crea la configuración desde las variables (ya combinadas).
   /// Lanza [ConfigException] con una explicación si algo no es válido.
@@ -97,12 +108,31 @@ class Config {
       );
     }
 
+    final costoTexto =
+        _texto(variables, 'COSTO_BCRYPT') ?? '$costoBcryptPorDefecto';
+    final costo = int.tryParse(costoTexto);
+    if (costo == null ||
+        costo < costoBcryptMinimo ||
+        costo > costoBcryptMaximo) {
+      throw ConfigException(
+        'COSTO_BCRYPT debe ser un número entre $costoBcryptMinimo y '
+        '$costoBcryptMaximo (llegó "$costoTexto").',
+      );
+    }
+    if (produccion && costo < costoBcryptPorDefecto) {
+      throw ConfigException(
+        'En producción COSTO_BCRYPT debe ser al menos '
+        '$costoBcryptPorDefecto (llegó $costo).',
+      );
+    }
+
     return Config(
       host: _texto(variables, 'HOST') ?? '127.0.0.1',
       puerto: puerto,
       produccion: produccion,
       origenesPermitidos: List.unmodifiable(origenes),
       rutaBaseDatos: _texto(variables, 'RUTA_BASE_DATOS') ?? 'brilliant.db',
+      costoBcrypt: costo,
     );
   }
 

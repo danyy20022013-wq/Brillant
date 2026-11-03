@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 String? validarNombre(String? valor) {
   final texto = valor?.trim() ?? '';
   if (texto.isEmpty) return 'Escribe tu nombre de usuario';
@@ -18,10 +20,17 @@ String? validarCorreo(String? valor) {
   return null;
 }
 
+/// Bytes máximos de una contraseña en UTF-8: bcrypt solo usa los primeros
+/// 72, y el servidor rechaza las más largas.
+const maximoBytesContrasena = 72;
+
 String? validarContrasena(String? valor) {
   final texto = valor ?? '';
   if (texto.isEmpty) return 'Escribe tu contraseña';
   if (texto.length < 6) return 'Mínimo 6 caracteres';
+  if (utf8.encode(texto).length > maximoBytesContrasena) {
+    return 'Máximo 72 bytes (las tildes y la ñ ocupan 2)';
+  }
   return null;
 }
 

@@ -7,14 +7,21 @@ import 'package:test/test.dart';
 Request _peticion(String metodo, String ruta, {Map<String, String>? cabeceras}) =>
     Request(metodo, Uri.parse('http://localhost$ruta'), headers: cabeceras);
 
+final _servicios = Servicios(
+  usuarios: RepositorioUsuarios.enMemoria(),
+  contrasenas: const Contrasenas(costo: 4),
+);
+
 void main() {
-  final desarrollo = crearAplicacion(const Config());
+  final desarrollo = crearAplicacion(const Config(), _servicios);
   final produccion = crearAplicacion(
     const Config(
       produccion: true,
       origenesPermitidos: ['https://brilliant.ejemplo.com'],
     ),
+    _servicios,
   );
+  tearDownAll(() => _servicios.usuarios.cerrar());
 
   group('GET /salud', () {
     test('responde 200 con JSON', () async {
@@ -144,7 +151,8 @@ void main() {
 
     test('el registro de peticiones no incluye cabeceras ni cuerpo', () async {
       final lineas = <String>[];
-      final app = crearAplicacion(const Config(), registrar: lineas.add);
+      final app =
+          crearAplicacion(const Config(), _servicios, registrar: lineas.add);
       await app(Request(
         'GET',
         Uri.parse('http://localhost/salud'),
