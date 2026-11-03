@@ -4,7 +4,10 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import 'juego.dart';
+import 'movimiento_registrado.dart';
 import 'tipo.dart';
+
+export 'movimiento_registrado.dart';
 
 /// Evento: un jugador acaba de completar una zona. Viaja en el estado solo
 /// en la jugada que la completó (la siguiente acción lo limpia).
@@ -61,6 +64,10 @@ class JuegoEstado extends Equatable {
   /// La zona que se completó en la última jugada (null si ninguna).
   final ZonaCompletada? zonaCompletada;
 
+  /// Todos los movimientos de la partida, del más antiguo al más reciente.
+  /// Es una lista inmutable; cada partida empieza con un cubit nuevo.
+  final List<MovimientoRegistrado> historial;
+
   final Nivel? _nivel;
 
   /// Mapa de la partida (por defecto el 1).
@@ -78,6 +85,7 @@ class JuegoEstado extends Equatable {
     this.terminado = false,
     this.mensaje = '',
     this.zonaCompletada,
+    this.historial = const [],
   }) : _nivel = nivel;
 
   Juego get juego => tableros[jugador];
@@ -136,6 +144,7 @@ class JuegoEstado extends Equatable {
     bool? terminado,
     String? mensaje,
     ZonaCompletada? zonaCompletada,
+    List<MovimientoRegistrado>? historial,
   }) {
     return JuegoEstado(
       tableros: tableros ?? this.tableros,
@@ -149,8 +158,13 @@ class JuegoEstado extends Equatable {
       terminado: terminado ?? this.terminado,
       mensaje: mensaje ?? '',
       zonaCompletada: zonaCompletada,
+      historial: historial ?? this.historial,
     );
   }
+
+  /// Historial nuevo (inmutable) con [movimiento] al final.
+  List<MovimientoRegistrado> conMovimiento(MovimientoRegistrado movimiento) =>
+      List.unmodifiable([...historial, movimiento]);
 
   @override
   List<Object?> get props => [
@@ -165,6 +179,7 @@ class JuegoEstado extends Equatable {
         terminado,
         mensaje,
         zonaCompletada,
+        historial,
       ];
 }
 
@@ -269,6 +284,15 @@ class JuegoCubit extends Cubit<JuegoEstado> {
       terminado: siguiente == null,
       mensaje: mensaje,
       zonaCompletada: evento,
+      historial: state.conMovimiento(MovimientoRegistrado.colocacion(
+        turno: state.turno,
+        jugador: j,
+        ancla: state.ancla!,
+        colocado: valor,
+        fila: fila,
+        columna: columna,
+        zona: estructura.zonas[z].nombre,
+      )),
     ));
   }
 
@@ -282,6 +306,10 @@ class JuegoCubit extends Cubit<JuegoEstado> {
       mensaje: state.esIndividual
           ? 'Pasaste el turno'
           : 'J${state.jugador + 1} pasó el turno',
+      historial: state.conMovimiento(MovimientoRegistrado.salto(
+        turno: state.turno,
+        jugador: state.jugador,
+      )),
     ));
   }
 

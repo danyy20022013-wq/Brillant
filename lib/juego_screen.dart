@@ -278,6 +278,12 @@ class _Encabezado extends StatelessWidget {
           ),
         ),
         IconButton(
+          onPressed: () => mostrarHistorial(context, estado),
+          tooltip: 'Historial',
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.history_rounded, color: Colors.white70),
+        ),
+        IconButton(
           onPressed: () => mostrarReglas(context, estado.nivel),
           tooltip: 'Reglas',
           visualDensity: VisualDensity.compact,
@@ -286,6 +292,65 @@ class _Encabezado extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Abre la lista de movimientos de la partida, del más reciente al más
+/// antiguo.
+Future<void> mostrarHistorial(BuildContext context, JuegoEstado estado) {
+  final movimientos = estado.historial.reversed.toList();
+  final alto = MediaQuery.sizeOf(context).height;
+
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: _panel,
+    constraints: const BoxConstraints(maxWidth: 520),
+    builder: (_) => SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: alto * 0.7),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Historial',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (movimientos.isEmpty)
+                const Text(
+                  'Todavía no hay movimientos',
+                  style: TextStyle(color: Colors.white70),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: movimientos.length,
+                    separatorBuilder: (_, _) =>
+                        const Divider(color: Colors.white12, height: 12),
+                    itemBuilder: (_, i) => Text(
+                      movimientos[i].texto(individual: estado.esIndividual),
+                      key: Key('movimiento-$i'),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _Marcadores extends StatelessWidget {
