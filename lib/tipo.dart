@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Tipo de zona del tablero. Cada tipo trae su color, su regla de
 /// colocación y su tabla de puntos.
-abstract class Tipo {
+sealed class Tipo {
   const Tipo();
 
   static const Tipo rojo = TipoRojo();

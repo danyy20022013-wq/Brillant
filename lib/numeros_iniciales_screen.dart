@@ -94,7 +94,7 @@ class _Vista extends StatelessWidget {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => mostrarReglas(context),
+                            onPressed: () => mostrarReglas(context, mapa),
                             tooltip: 'Reglas',
                             icon: const Icon(
                               Icons.help_outline_rounded,

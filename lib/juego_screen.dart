@@ -179,7 +179,7 @@ class _Encabezado extends StatelessWidget {
           ),
         ),
         IconButton(
-          onPressed: () => mostrarReglas(context),
+          onPressed: () => mostrarReglas(context, estado.nivel),
           tooltip: 'Reglas',
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.help_outline_rounded, color: Colors.white70),

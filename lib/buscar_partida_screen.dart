@@ -59,7 +59,7 @@ class _BuscarPartidaScreenState extends State<BuscarPartidaScreen> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => mostrarReglas(context),
+                        onPressed: () => mostrarReglas(context, _mapa),
                         tooltip: 'Reglas',
                         icon: const Icon(
                           Icons.help_outline_rounded,

@@ -6,16 +6,9 @@ import 'tipo.dart';
 const _panel = Color(0xFF1F2244);
 const _dorado = Color(0xFFFFD166);
 
-final List<(Tipo, String, int)> _colores = [
-  (Tipo.rojo, 'Rojo', 2),
-  (Tipo.azul, 'Azul', 2),
-  (Tipo.verde, 'Verde', 2),
-  (Tipo.morado, 'Morado', 2),
-  (Tipo.amarillo, 'Amarillo', 1),
-];
-
-/// Abre la hoja con las reglas del juego.
-Future<void> mostrarReglas(BuildContext context) {
+/// Abre la hoja con las reglas del juego para el [mapa]: cómo se juega y,
+/// por cada zona del mapa, su color, nombre, regla y puntos.
+Future<void> mostrarReglas(BuildContext context, Nivel mapa) {
   final alto = MediaQuery.of(context).size.height;
   return showModalBottomSheet<void>(
     context: context,
@@ -25,17 +18,24 @@ Future<void> mostrarReglas(BuildContext context) {
     builder: (_) => SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: alto * 0.85),
-        child: const _ContenidoReglas(),
+        child: _ContenidoReglas(mapa: mapa),
       ),
     ),
   );
 }
 
+/// Sobre amarillo y blanco el texto va oscuro para que se lea.
+bool _fondoClaro(Tipo tipo) => tipo is TipoAmarillo || tipo is TipoBlanco;
+
 class _ContenidoReglas extends StatelessWidget {
-  const _ContenidoReglas();
+  final Nivel mapa;
+
+  const _ContenidoReglas({required this.mapa});
 
   @override
   Widget build(BuildContext context) {
+    final zonas = mapa.estructura.zonas;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
@@ -48,6 +48,10 @@ class _ContenidoReglas extends StatelessWidget {
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
+          ),
+          Text(
+            'Mapa ${mapa.numero} · ${zonas.length} zonas',
+            style: const TextStyle(color: Colors.white54),
           ),
           const _Seccion('Cómo se juega'),
           const _Paso(
@@ -76,39 +80,19 @@ class _ContenidoReglas extends StatelessWidget {
             'La partida termina cuando el tablero está lleno o cuando '
                 'presionas Terminar.',
           ),
-          const _Seccion('Regla de cada color'),
-          for (final (tipo, nombre, zonas) in _colores)
-            _FilaColor(tipo: tipo, nombre: nombre, zonas: zonas),
           const _Seccion('Puntos por zona'),
           const Text(
             'Una zona puntúa cuando se llena, según el orden en que los '
             'jugadores la llenan: 1.º, 2.º y 3.º. Después del tercero ya '
             'nadie puntúa. Una zona llena no se vacía, para que otros '
-            'jugadores puedan llenarla después. Las dos zonas del mismo '
-            'color son independientes y no se mezclan. Los amarillos son '
-            'una sola zona repartida por todo el tablero. En modo '
+            'jugadores puedan llenarla después. Las zonas del mismo color '
+            'son independientes y no se mezclan. Algunos colores forman '
+            'una sola zona aunque sus casillas estén separadas. En modo '
             'individual siempre eres el primero en llenar.',
             style: TextStyle(color: Colors.white70, height: 1.35),
           ),
-          const SizedBox(height: 12),
-          for (final (tipo, nombre, _) in _colores)
-            _FilaPuntos(tipo: tipo, nombre: nombre),
-          const _Seccion('Más mapas'),
-          const _Paso(
-            '•',
-            'Blanco (gris): todos los números iguales, como el azul. '
-                'Si sus casillas están separadas, forman una zona.',
-          ),
-          const _Paso(
-            '•',
-            'Naranja: la zona de arriba solo acepta números del 4 al 6 '
-                'y la de abajo del 1 al 3.',
-          ),
-          const _Paso(
-            '•',
-            'Los puntos de cada zona cambian según el mapa. '
-                'Míralos en el panel de zonas.',
-          ),
+          _Seccion('Zonas del mapa ${mapa.numero}'),
+          for (final zona in zonas) _FilaZona(zona: zona),
         ],
       ),
     );
@@ -172,78 +156,40 @@ class _Paso extends StatelessWidget {
   }
 }
 
-class _FilaColor extends StatelessWidget {
-  final Tipo tipo;
-  final String nombre;
-  final int zonas;
+/// Una zona del mapa: nombre, casillas, regla y puntos, sobre su color.
+class _FilaZona extends StatelessWidget {
+  final ZonaDef zona;
 
-  const _FilaColor({
-    required this.tipo,
-    required this.nombre,
-    required this.zonas,
-  });
+  const _FilaZona({required this.zona});
 
   @override
   Widget build(BuildContext context) {
-    final texto = tipo is TipoAmarillo ? Colors.black87 : Colors.white;
-    final detalle = zonas == 1
-        ? '1 zona de 5 casillas repartidas por el tablero'
-        : '2 zonas';
+    final texto = _fondoClaro(zona.tipo) ? Colors.black87 : Colors.white;
+    final p = zona.puntos;
+    final casillas = zona.celdas.length;
 
     return Container(
+      key: Key('regla-${zona.nombre}'),
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: tipo.color,
+        color: zona.tipo.color,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$nombre · $detalle',
+            '${zona.nombre} · $casillas casillas',
             style: TextStyle(color: texto, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 2),
-          Text(tipo.descripcion, style: TextStyle(color: texto)),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilaPuntos extends StatelessWidget {
-  final Tipo tipo;
-  final String nombre;
-
-  const _FilaPuntos({required this.tipo, required this.nombre});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = puntosDe(tipo);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: tipo.color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 80,
-            child: Text(nombre, style: const TextStyle(color: Colors.white)),
-          ),
-          Expanded(
-            child: Text(
-              '1.º ${p[0]}   2.º ${p[1]}   3.º ${p[2]}',
-              style: const TextStyle(color: Colors.white70),
-            ),
+          Text(zona.tipo.descripcion, style: TextStyle(color: texto)),
+          const SizedBox(height: 2),
+          Text(
+            '1.º ${p[0]}   2.º ${p[1]}   3.º ${p[2]}',
+            style: TextStyle(color: texto, fontWeight: FontWeight.w600),
           ),
         ],
       ),

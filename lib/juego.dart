@@ -13,15 +13,17 @@ List<int> puntosDe(Tipo tipo) {
   return const [6, 4, 2]; // morado
 }
 
-String nombreDe(Tipo tipo) {
-  if (tipo is TipoRojo) return 'Rojo';
-  if (tipo is TipoAzul) return 'Azul';
-  if (tipo is TipoVerde) return 'Verde';
-  if (tipo is TipoAmarillo) return 'Amarillo';
-  if (tipo is TipoBlanco) return 'Blanco';
-  if (tipo is TipoNaranja) return 'Naranja ${tipo.minimo}-${tipo.maximo}';
-  return 'Morado';
-}
+/// Nombre del tipo en pantalla. Tipo es "sealed": si se agrega un tipo
+/// nuevo y falta aquí, el compilador avisa.
+String nombreDe(Tipo tipo) => switch (tipo) {
+      TipoRojo() => 'Rojo',
+      TipoAmarillo() => 'Amarillo',
+      TipoVerde() => 'Verde',
+      TipoAzul() => 'Azul',
+      TipoMorado() => 'Morado',
+      TipoBlanco() => 'Blanco',
+      TipoNaranja(:final minimo, :final maximo) => 'Naranja $minimo-$maximo',
+    };
 
 /// Una zona del tablero: su tipo, las casillas que la forman y los puntos
 /// para el 1.º, 2.º y 3.º jugador que la llenen.
