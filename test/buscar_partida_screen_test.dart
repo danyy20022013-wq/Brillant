@@ -119,7 +119,7 @@ void main() {
         (tester) async {
       await _abrir(tester);
 
-      final esperadas = {2: 10, 3: 8, 4: 8};
+      final esperadas = {2: 10, 3: 10, 4: 10};
       for (final entrada in esperadas.entries) {
         await _tocar(tester, find.byKey(Key('mapa-${entrada.key}')));
 

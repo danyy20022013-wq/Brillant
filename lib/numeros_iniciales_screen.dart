@@ -250,10 +250,12 @@ class _Casilla extends StatelessWidget {
     required this.repetida,
   });
 
+  /// Sobre el blanco el texto va oscuro para que se lea.
+  bool get _textoOscuro => tipo is TipoBlanco;
+
   @override
   Widget build(BuildContext context) {
     final esEstrella = indice != null;
-    final textoOscuro = tipo is TipoBlanco;
 
     return Padding(
       padding: const EdgeInsets.all(2),
@@ -290,7 +292,7 @@ class _Casilla extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: repetida || textoOscuro
+                                color: repetida || _textoOscuro
                                     ? Colors.black
                                     : Colors.white,
                               ),
@@ -335,7 +337,7 @@ class _Casilla extends StatelessWidget {
                           shape: const CircleBorder(),
                           backgroundColor: tipo.color,
                           foregroundColor:
-                              textoOscuro ? Colors.black87 : Colors.white,
+                              _textoOscuro ? Colors.black87 : Colors.white,
                         ),
                         onPressed: () => Navigator.of(context).pop(n),
                         child:

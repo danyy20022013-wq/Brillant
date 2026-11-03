@@ -136,19 +136,31 @@ class _Encabezado extends StatelessWidget {
 
     return Row(
       children: [
-        const Text(
-          'BRILLIANT',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 3,
+        // En pantallas angostas (320 px) el título se achica para caber.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'BRILLIANT',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 3,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Mapa ${estado.nivel.numero}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'Mapa ${estado.nivel.numero}',
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
         ),
         Expanded(
           child: Align(

@@ -145,4 +145,83 @@ void main() {
       }
     }
   });
+
+  group('Panel de zonas', () {
+    for (final mapa in nivelesDisponibles) {
+      testWidgets(
+          'mapa ${mapa.numero}: todas sus zonas con los puntos del mapa',
+          (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: JuegoScreen(
+              iniciales: const [
+                [1, 2, 3, 4, 5, 6],
+              ],
+              nivel: mapa,
+            ),
+          ),
+        );
+
+        final zonas = mapa.estructura.zonas;
+        for (final zona in zonas) {
+          expect(find.text(zona.nombre), findsOneWidget, reason: zona.nombre);
+        }
+
+        // Cuántas zonas muestran cada "+N" (el puntaje del 1.º).
+        final cuantas = <int, int>{};
+        for (final zona in zonas) {
+          cuantas[zona.puntos.first] = (cuantas[zona.puntos.first] ?? 0) + 1;
+        }
+        for (final MapEntry(key: puntos, value: n) in cuantas.entries) {
+          expect(find.text('+$puntos'), findsNWidgets(n), reason: '+$puntos');
+        }
+      });
+    }
+  });
+
+  group('Texto oscuro sobre el blanco', () {
+    Color? colorDelTexto(WidgetTester tester, int fila, int columna, String t) {
+      final texto = tester.widget<Text>(_textoEn(fila, columna, t));
+      return texto.style?.color;
+    }
+
+    testWidgets('en la partida (mapa 3, estrella blanca en 3,3)',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JuegoScreen(
+            iniciales: const [
+              [1, 2, 3, 4, 5, 6],
+            ],
+            nivel: nivel3,
+          ),
+        ),
+      );
+
+      expect(nivel3.layout[3][3].color, const Color(0xFFD9DCE3));
+      expect(colorDelTexto(tester, 3, 3, '3'), Colors.black87);
+      // En una casilla de color el texto sigue blanco.
+      expect(colorDelTexto(tester, 1, 2, '1'), Colors.white);
+    });
+
+    testWidgets('en los números iniciales (mapa 3)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: NumerosInicialesScreen(nivel: nivel3)),
+      );
+      await _elegirSeis(tester);
+
+      final blanco = tester.widget<Text>(
+        find.descendant(
+          of: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                (w.decoration as BoxDecoration?)?.color ==
+                    const Color(0xFFD9DCE3),
+          ),
+          matching: find.text('3'),
+        ),
+      );
+      expect(blanco.style?.color, Colors.black);
+    });
+  });
 }

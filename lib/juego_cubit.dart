@@ -20,9 +20,15 @@ class JuegoEstado extends Equatable {
   final bool terminado;
   final String mensaje;
 
+  final Nivel? _nivel;
+
+  /// Mapa de la partida (por defecto el 1).
+  Nivel get nivel => _nivel ?? nivel1;
+
   const JuegoEstado({
     required this.tableros,
     required this.ordenZonas,
+    Nivel? nivel,
     this.jugador = 0,
     this.dado1,
     this.dado2,
@@ -30,7 +36,7 @@ class JuegoEstado extends Equatable {
     this.turno = 1,
     this.terminado = false,
     this.mensaje = '',
-  });
+  }) : _nivel = nivel;
 
   Juego get juego => tableros[jugador];
   int get totalJugadores => tableros.length;
@@ -63,7 +69,7 @@ class JuegoEstado extends Equatable {
   int puntosEn(int jugadorIdx, int zona) {
     final lugar = ordenZonas[zona].indexOf(jugadorIdx);
     if (lugar == -1) return 0;
-    final tabla = puntosDe(estructuraNivel1.zonas[zona].tipo);
+    final tabla = nivel.estructura.zonas[zona].puntos;
     return lugar < tabla.length ? tabla[lugar] : 0;
   }
 
@@ -91,6 +97,7 @@ class JuegoEstado extends Equatable {
     return JuegoEstado(
       tableros: tableros ?? this.tableros,
       ordenZonas: ordenZonas ?? this.ordenZonas,
+      nivel: nivel,
       jugador: jugador ?? this.jugador,
       dado1: dado1,
       dado2: dado2,
@@ -104,6 +111,7 @@ class JuegoEstado extends Equatable {
   @override
   List<Object?> get props => [
         tableros,
+        nivel.numero,
         ordenZonas,
         jugador,
         dado1,
@@ -119,14 +127,24 @@ class JuegoCubit extends Cubit<JuegoEstado> {
   final Random _random;
 
   /// [iniciales] trae los 6 números iniciales de cada jugador.
-  JuegoCubit({required List<List<int>> iniciales, Random? random})
+  /// [nivel] es el mapa que se juega (por defecto el 1).
+  JuegoCubit({
+    required List<List<int>> iniciales,
+    Nivel? nivel,
+    Random? random,
+  }) : this._(iniciales, nivel ?? nivel1, random);
+
+  JuegoCubit._(List<List<int>> iniciales, Nivel mapa, Random? random)
       : _random = random ?? Random(),
         super(JuegoEstado(
-          tableros: [for (final i in iniciales) Juego.inicial(i)],
+          tableros: [
+            for (final i in iniciales) Juego.inicial(i, nivel: mapa),
+          ],
           ordenZonas: List.generate(
-            estructuraNivel1.zonas.length,
+            mapa.estructura.zonas.length,
             (_) => <int>[],
           ),
+          nivel: mapa,
         ));
 
   void tirarDados() {
@@ -170,13 +188,14 @@ class JuegoCubit extends Cubit<JuegoEstado> {
 
     final orden = [for (final o in state.ordenZonas) [...o]];
     var mensaje = '';
-    final z = estructuraNivel1.indiceZona[fila][columna];
+    final estructura = state.nivel.estructura;
+    final z = estructura.indiceZona[fila][columna];
     if (!antes.zonaLlena(z) && despues.zonaLlena(z)) {
       orden[z].add(j);
-      final tabla = puntosDe(estructuraNivel1.zonas[z].tipo);
+      final tabla = estructura.zonas[z].puntos;
       final lugar = orden[z].length - 1;
       final puntos = lugar < tabla.length ? tabla[lugar] : 0;
-      final nombre = estructuraNivel1.zonas[z].nombre;
+      final nombre = estructura.zonas[z].nombre;
       final quien = state.esIndividual ? 'Completaste' : 'J${j + 1} completó';
       mensaje = puntos > 0
           ? '$quien $nombre: +$puntos puntos'

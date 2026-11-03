@@ -217,44 +217,52 @@ final List<Nivel> nivelesDisponibles = [nivel1, nivel2, nivel3, nivel4];
 /// Estructura del mapa 1 (se conserva para el código que aún la usa).
 final EstructuraTablero estructuraNivel1 = nivel1.estructura;
 
-/// El tablero de UN jugador durante la partida.
+/// El tablero de UN jugador durante la partida, en un mapa.
 class Juego extends Equatable {
   final List<List<int?>> tablero;
 
-  const Juego._(this.tablero);
+  /// Mapa en el que se juega.
+  final Nivel nivel;
 
-  /// Crea el tablero poniendo los 6 números iniciales en las estrellas.
-  factory Juego.inicial(List<int> iniciales) {
-    final filas = layoutTableroNivel1.length;
-    final columnas = layoutTableroNivel1[0].length;
+  const Juego._(this.tablero, this.nivel);
+
+  /// Crea el tablero poniendo los 6 números iniciales en las estrellas
+  /// del [nivel] (por defecto el mapa 1).
+  factory Juego.inicial(List<int> iniciales, {Nivel? nivel}) {
+    final mapa = nivel ?? nivel1;
+    final filas = mapa.layout.length;
+    final columnas = mapa.layout[0].length;
     final tablero =
         List.generate(filas, (_) => List<int?>.filled(columnas, null));
-    for (var i = 0; i < casillasEstrella.length; i++) {
-      final p = casillasEstrella[i];
+    for (var i = 0; i < mapa.estrellas.length; i++) {
+      final p = mapa.estrellas[i];
       tablero[p.fila][p.columna] = iniciales[i];
     }
-    return Juego._(tablero);
+    return Juego._(tablero, mapa);
   }
 
+  /// Casillas con estrella del mapa 1 (las pantallas usan Nivel.esEstrella).
   static bool esSemilla(int fila, int columna) =>
       casillasEstrella.any((p) => p.fila == fila && p.columna == columna);
+
+  EstructuraTablero get _estructura => nivel.estructura;
 
   /// Números que hay ahora mismo en la zona [z].
   List<int> valoresDeZona(int z) {
     final resultado = <int>[];
-    for (final (f, c) in estructuraNivel1.zonas[z].celdas) {
+    for (final (f, c) in _estructura.zonas[z].celdas) {
       final v = tablero[f][c];
       if (v != null) resultado.add(v);
     }
     return resultado;
   }
 
-  bool zonaLlena(int z) => estructuraNivel1.zonas[z].celdas
-      .every((p) => tablero[p.$1][p.$2] != null);
+  bool zonaLlena(int z) =>
+      _estructura.zonas[z].celdas.every((p) => tablero[p.$1][p.$2] != null);
 
   /// true cuando todas las zonas del tablero están llenas.
   bool get estaLleno {
-    for (var z = 0; z < estructuraNivel1.zonas.length; z++) {
+    for (var z = 0; z < _estructura.zonas.length; z++) {
       if (!zonaLlena(z)) return false;
     }
     return true;
@@ -274,8 +282,8 @@ class Juego extends Equatable {
           if (nf < 0 || nf >= tablero.length) continue;
           if (nc < 0 || nc >= tablero[nf].length) continue;
           if (tablero[nf][nc] != null) continue;
-          final z = estructuraNivel1.indiceZona[nf][nc];
-          final tipo = estructuraNivel1.zonas[z].tipo;
+          final z = _estructura.indiceZona[nf][nc];
+          final tipo = _estructura.zonas[z].tipo;
           if (tipo.esPosibleAgregar(valoresDeZona(z), aColocar)) {
             resultado.add((nf, nc));
           }
@@ -290,9 +298,9 @@ class Juego extends Equatable {
   Juego colocar(int fila, int columna, int valor) {
     final nuevo = [for (final f in tablero) [...f]];
     nuevo[fila][columna] = valor;
-    return Juego._(nuevo);
+    return Juego._(nuevo, nivel);
   }
 
   @override
-  List<Object?> get props => [tablero];
+  List<Object?> get props => [nivel.numero, tablero];
 }
