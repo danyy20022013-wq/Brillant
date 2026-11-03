@@ -86,7 +86,7 @@ void main() {
       expect(find.textContaining('tira los dos dados'), findsOneWidget);
       expect(find.textContaining('ANCLA'), findsOneWidget);
       expect(find.textContaining('nunca en diagonal'), findsOneWidget);
-      expect(find.textContaining('pasa el turno'), findsOneWidget);
+      expect(find.textContaining('salta el turno'), findsOneWidget);
     });
 
     testWidgets('aclara que las zonas llenas no se vacían y que son independientes',

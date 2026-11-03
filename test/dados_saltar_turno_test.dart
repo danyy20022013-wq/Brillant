@@ -197,7 +197,7 @@ void main() {
       expect(cubit.state.turno, 2);
       expect(cubit.state.hayDados, isFalse);
       expect(find.text('Tirar dados'), findsOneWidget);
-      expect(find.text('Pasaste el turno'), findsOneWidget);
+      expect(find.text('Saltaste el turno'), findsOneWidget);
     });
 
     testWidgets('sin jugadas lo dice y al confirmar se salta el turno',

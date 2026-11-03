@@ -73,7 +73,7 @@ class _ContenidoReglas extends StatelessWidget {
           ),
           const _Paso(
             '5',
-            'Si no hay ninguna jugada posible, pasa el turno.',
+            'Si no hay ninguna jugada posible, salta el turno.',
           ),
           const _Paso(
             '6',
