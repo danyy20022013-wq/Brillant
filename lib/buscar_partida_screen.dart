@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-// ScrollCacheExtent no viene en material.dart en esta versión de Flutter.
-import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import 'auth_repository.dart';
 import 'juego.dart';
@@ -103,7 +101,7 @@ class _BuscarPartidaScreenState extends State<BuscarPartidaScreen> {
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       childAspectRatio: 1.05,
-                      scrollCacheExtent: const ScrollCacheExtent.pixels(1000),
+                      cacheExtent: 1000,
                       children: [
                         for (final mapa in nivelesDisponibles)
                           _TarjetaMapa(
