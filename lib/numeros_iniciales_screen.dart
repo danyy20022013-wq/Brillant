@@ -30,13 +30,14 @@ class NumerosInicialesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mapa = nivel ?? nivelesDisponibles.first;
     return BlocProvider(
-      create: (_) => NumerosInicialesCubit(),
+      create: (_) => NumerosInicialesCubit(nivel: mapa),
       child: _Vista(
         jugador: jugador,
         totalJugadores: totalJugadores,
         anteriores: anteriores,
-        mapa: nivel ?? nivelesDisponibles.first,
+        mapa: mapa,
       ),
     );
   }
@@ -129,12 +130,24 @@ class _Vista extends StatelessWidget {
                       SizedBox(
                         height: 24,
                         child: Center(
+                          // Un aviso a la vez para que quepa en 320 px.
                           child: estado.tieneRepetidos
                               ? const Text(
                                   'Los números no pueden repetirse',
                                   style: TextStyle(color: Color(0xFFFF6B6B)),
                                 )
-                              : null,
+                              : estado.tieneInvalidos
+                                  ? const FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'Hay números que no respetan la regla '
+                                        'de su zona',
+                                        style: TextStyle(
+                                          color: Color(0xFFFF6B6B),
+                                        ),
+                                      ),
+                                    )
+                                  : null,
                         ),
                       ),
                       SizedBox(
@@ -233,6 +246,7 @@ class _Grilla extends StatelessWidget {
       indice: indice,
       valor: indice == null ? null : estado.valores[indice],
       repetida: indice != null && estado.casillaRepetida(indice),
+      invalida: indice != null && estado.casillaInvalida(indice),
     );
   }
 }
@@ -243,12 +257,18 @@ class _Casilla extends StatelessWidget {
   final int? valor;
   final bool repetida;
 
+  /// El número rompe la regla de su zona (se marca como las repetidas).
+  final bool invalida;
+
   const _Casilla({
     required this.tipo,
     required this.indice,
     required this.valor,
     required this.repetida,
+    required this.invalida,
   });
+
+  bool get _marcada => repetida || invalida;
 
   /// Sobre el blanco el texto va oscuro para que se lea.
   bool get _textoOscuro => tipo is TipoBlanco;
@@ -266,7 +286,7 @@ class _Casilla extends StatelessWidget {
             color: tipo.color,
             borderRadius: BorderRadius.circular(10),
             border:
-                repetida ? Border.all(color: Colors.white, width: 3) : null,
+                _marcada ? Border.all(color: Colors.white, width: 3) : null,
             boxShadow: esEstrella
                 ? [
                     BoxShadow(
@@ -292,7 +312,7 @@ class _Casilla extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: repetida || _textoOscuro
+                                color: _marcada || _textoOscuro
                                     ? Colors.black
                                     : Colors.white,
                               ),
@@ -308,12 +328,15 @@ class _Casilla extends StatelessWidget {
 
   Future<void> _elegir(BuildContext context) async {
     final cubit = context.read<NumerosInicialesCubit>();
+    final estado = cubit.state;
+    final regla = estado.reglaDe(indice!);
     final elegido = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: const Color(0xFF1F2244),
       builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        // Si no cabe (celulares chicos), el selector se puede desplazar.
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -321,6 +344,15 @@ class _Casilla extends StatelessWidget {
                 'Elige un número',
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
+              if (regla != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  regla,
+                  key: const Key('regla-zona'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
@@ -338,8 +370,14 @@ class _Casilla extends StatelessWidget {
                           backgroundColor: tipo.color,
                           foregroundColor:
                               _textoOscuro ? Colors.black87 : Colors.white,
+                          // Los que rompen la regla se ven, pero apagados.
+                          disabledBackgroundColor:
+                              tipo.color.withValues(alpha: 0.2),
+                          disabledForegroundColor: Colors.white30,
                         ),
-                        onPressed: () => Navigator.of(context).pop(n),
+                        onPressed: estado.esPosible(indice!, n)
+                            ? () => Navigator.of(context).pop(n)
+                            : null,
                         child:
                             Text('$n', style: const TextStyle(fontSize: 18)),
                       ),

@@ -9,8 +9,16 @@ Finder _opcion(int numero) => find.descendant(
       matching: find.text('$numero'),
     );
 
-Future<void> _elegirSeis(WidgetTester tester) async {
-  for (var n = 1; n <= 6; n++) {
+/// Números válidos para cada mapa, en orden de lectura de las estrellas.
+/// En el mapa 4 los naranjas obligan a 4-6 arriba y 1-3 abajo.
+List<int> _numerosPara(Nivel mapa) =>
+    mapa.numero == 4 ? const [4, 5, 6, 1, 2, 3] : const [1, 2, 3, 4, 5, 6];
+
+Future<void> _elegirSeis(
+  WidgetTester tester, [
+  List<int> numeros = const [1, 2, 3, 4, 5, 6],
+]) async {
+  for (final n in numeros) {
     await tester.tap(find.byIcon(Icons.star_rounded).first);
     await tester.pumpAndSettle();
     await tester.tap(_opcion(n));
@@ -55,7 +63,8 @@ void main() {
           MaterialApp(home: NumerosInicialesScreen(nivel: mapa)),
         );
 
-        await _elegirSeis(tester);
+        final numeros = _numerosPara(mapa);
+        await _elegirSeis(tester, numeros);
         await tester.tap(find.text('Inicio'));
         await tester.pumpAndSettle();
 
@@ -63,7 +72,10 @@ void main() {
 
         for (var i = 0; i < 6; i++) {
           final p = mapa.estrellas[i];
-          expect(_textoEn(p.fila, p.columna, '${i + 1}'), findsOneWidget);
+          expect(
+            _textoEn(p.fila, p.columna, '${numeros[i]}'),
+            findsOneWidget,
+          );
         }
 
         for (var f = 0; f < 7; f++) {
