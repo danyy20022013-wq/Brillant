@@ -98,6 +98,25 @@ class AuthCubit extends Cubit<AuthEstado> {
     emit(const AuthSinSesion());
   }
 
+  /// Borra la cuenta de la sesión actual. Devuelve null si terminó la sesión
+  /// (cuenta borrada, o sesión vencida: en ese caso el login muestra el
+  /// aviso) y el mensaje de error si la sesión sigue (contraseña incorrecta,
+  /// demasiados intentos, sin conexión...).
+  Future<String?> borrarCuenta(String contrasena) async {
+    if (state is! AuthConSesion) return null;
+    try {
+      await _repositorio.borrarCuenta(contrasena);
+      emit(const AuthSinSesion());
+      return null;
+    } on SesionVencidaException catch (e) {
+      emit(AuthSinSesion(error: e.mensaje));
+      return null;
+    } on AuthException catch (e) {
+      // Incluye el 403 de contraseña incorrecta: la sesión NO se cierra.
+      return e.mensaje;
+    }
+  }
+
   /// Quita el mensaje de error al cambiar de pantalla.
   void limpiarError() {
     final actual = state;

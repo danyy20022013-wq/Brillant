@@ -53,6 +53,7 @@ class _Puerta extends StatelessWidget {
           AuthConSesion(:final usuario) => BuscarPartidaScreen(
             usuario: usuario,
             alCerrarSesion: () => context.read<AuthCubit>().cerrarSesion(),
+            alEliminarCuenta: context.read<AuthCubit>().borrarCuenta,
           ),
           AuthSinSesion() => const LoginScreen(),
         };

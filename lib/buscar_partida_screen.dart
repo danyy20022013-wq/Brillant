@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import 'auth_repository.dart';
+import 'eliminar_cuenta_dialogo.dart';
 import 'juego.dart';
 import 'numeros_iniciales_screen.dart';
 import 'reglas.dart';
@@ -15,10 +16,15 @@ class BuscarPartidaScreen extends StatefulWidget {
   final Usuario usuario;
   final VoidCallback alCerrarSesion;
 
+  /// Si se indica, aparece la opción "Eliminar cuenta" (separada de
+  /// "Cerrar sesión").
+  final EliminarCuenta? alEliminarCuenta;
+
   const BuscarPartidaScreen({
     super.key,
     required this.usuario,
     required this.alCerrarSesion,
+    this.alEliminarCuenta,
   });
 
   @override
@@ -134,6 +140,23 @@ class _BuscarPartidaScreenState extends State<BuscarPartidaScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white38, fontSize: 12),
                   ),
+                  if (widget.alEliminarCuenta case final eliminar?)
+                    Center(
+                      child: TextButton.icon(
+                        key: const Key('opcion-eliminar-cuenta'),
+                        onPressed: () =>
+                            mostrarDialogoEliminarCuenta(context, eliminar),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFFFF8A8A),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: const Icon(
+                          Icons.delete_forever_rounded,
+                          size: 18,
+                        ),
+                        label: const Text('Eliminar cuenta'),
+                      ),
+                    ),
                 ],
               ),
             ),
