@@ -40,6 +40,8 @@ void main() {
   group('Inicio de sesión', () {
     testWidgets('la app abre en el inicio de sesión', (tester) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       expect(find.text('BRILLIANT'), findsOneWidget);
       expect(find.byKey(const Key('campo-correo')), findsOneWidget);
@@ -51,6 +53,8 @@ void main() {
 
     testWidgets('con los campos vacíos muestra los errores', (tester) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       await _tocar(tester, _botonEntrar);
 
@@ -60,6 +64,8 @@ void main() {
 
     testWidgets('un correo mal escrito se rechaza', (tester) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       await _escribir(tester, 'campo-correo', 'dany');
       await _escribir(tester, 'campo-contrasena', '123456');
@@ -70,6 +76,8 @@ void main() {
 
     testWidgets('una cuenta que no existe muestra el error', (tester) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       await _escribir(tester, 'campo-correo', 'nadie@correo.com');
       await _escribir(tester, 'campo-contrasena', '123456');
@@ -86,7 +94,11 @@ void main() {
         correo: 'dany@correo.com',
         contrasena: '123456',
       );
+      // La cuenta existe, pero nadie tiene la sesión iniciada.
+      await repo.cerrarSesion();
       await tester.pumpWidget(BrilliantApp(repositorio: repo));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       await _escribir(tester, 'campo-correo', 'dany@correo.com');
       await _escribir(tester, 'campo-contrasena', '123456');
@@ -101,6 +113,8 @@ void main() {
 
     testWidgets('el ojito muestra y oculta la contraseña', (tester) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       bool oculta() => tester
           .widget<EditableText>(
@@ -124,9 +138,12 @@ void main() {
   });
 
   group('Registro', () {
-    testWidgets('Crear cuenta abre el registro y se puede volver',
-        (tester) async {
+    testWidgets('Crear cuenta abre el registro y se puede volver', (
+      tester,
+    ) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
 
       await _tocar(tester, find.text('Crear cuenta'));
       expect(find.text('Registro'), findsOneWidget);
@@ -141,6 +158,8 @@ void main() {
 
     testWidgets('valida cada campo', (tester) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
       await _tocar(tester, find.text('Crear cuenta'));
 
       await _llenarRegistro(
@@ -158,9 +177,12 @@ void main() {
       expect(find.text('Las contraseñas no coinciden'), findsOneWidget);
     });
 
-    testWidgets('si las contraseñas no coinciden no crea la cuenta',
-        (tester) async {
+    testWidgets('si las contraseñas no coinciden no crea la cuenta', (
+      tester,
+    ) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
       await _tocar(tester, find.text('Crear cuenta'));
 
       await _llenarRegistro(tester, confirmacion: '654321');
@@ -170,9 +192,12 @@ void main() {
       expect(find.text('Buscar partida'), findsNothing);
     });
 
-    testWidgets('un registro correcto entra directo a Buscar partida',
-        (tester) async {
+    testWidgets('un registro correcto entra directo a Buscar partida', (
+      tester,
+    ) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
       await _tocar(tester, find.text('Crear cuenta'));
 
       await _llenarRegistro(tester);
@@ -189,7 +214,11 @@ void main() {
         correo: 'dany@correo.com',
         contrasena: '123456',
       );
+      // La cuenta existe, pero nadie tiene la sesión iniciada.
+      await repo.cerrarSesion();
       await tester.pumpWidget(BrilliantApp(repositorio: repo));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
       await _tocar(tester, find.text('Crear cuenta'));
 
       await _llenarRegistro(tester);
@@ -206,7 +235,11 @@ void main() {
         correo: 'otro@correo.com',
         contrasena: '123456',
       );
+      // La cuenta existe, pero nadie tiene la sesión iniciada.
+      await repo.cerrarSesion();
       await tester.pumpWidget(BrilliantApp(repositorio: repo));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
       await _tocar(tester, find.text('Crear cuenta'));
 
       await _llenarRegistro(tester);
@@ -217,9 +250,12 @@ void main() {
   });
 
   group('Cerrar sesión', () {
-    testWidgets('cerrar sesión vuelve al inicio y se puede entrar de nuevo',
-        (tester) async {
+    testWidgets('cerrar sesión vuelve al inicio y se puede entrar de nuevo', (
+      tester,
+    ) async {
       await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+      // Espera a que termine de comprobar la sesión guardada.
+      await tester.pumpAndSettle();
       await _tocar(tester, find.text('Crear cuenta'));
       await _llenarRegistro(tester);
       await _tocar(tester, _botonRegistro);
@@ -242,13 +278,18 @@ void main() {
     for (final tamano in pantallas) {
       final nombre = '${tamano.width.toInt()}x${tamano.height.toInt()}';
 
-      testWidgets('el inicio de sesión y el registro caben en $nombre',
-          (tester) async {
+      testWidgets('el inicio de sesión y el registro caben en $nombre', (
+        tester,
+      ) async {
         tester.view.physicalSize = tamano;
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.reset);
 
         await tester.pumpWidget(BrilliantApp(repositorio: _repo()));
+
+        // Espera a que termine de comprobar la sesión guardada.
+
+        await tester.pumpAndSettle();
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 

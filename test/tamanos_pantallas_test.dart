@@ -26,6 +26,8 @@ void main() {
       testWidgets('login en ${_nombre(tamano)} $conTeclado', (tester) async {
         _usarPantalla(tester, tamano, teclado: teclado);
         await tester.pumpWidget(const BrilliantApp());
+        // Espera a que termine de comprobar la sesión guardada.
+        await tester.pumpAndSettle();
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
@@ -38,14 +40,17 @@ void main() {
         await tester.ensureVisible(boton);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(tester.getRect(boton).bottom,
-            lessThanOrEqualTo(tamano.height - teclado));
+        expect(
+          tester.getRect(boton).bottom,
+          lessThanOrEqualTo(tamano.height - teclado),
+        );
       });
 
-      testWidgets('registro en ${_nombre(tamano)} $conTeclado',
-          (tester) async {
+      testWidgets('registro en ${_nombre(tamano)} $conTeclado', (tester) async {
         _usarPantalla(tester, tamano, teclado: teclado);
         await tester.pumpWidget(const BrilliantApp());
+        // Espera a que termine de comprobar la sesión guardada.
+        await tester.pumpAndSettle();
         final crear = find.text('Crear cuenta');
         await tester.ensureVisible(crear);
         await tester.pumpAndSettle();
@@ -67,13 +72,16 @@ void main() {
         await tester.ensureVisible(boton);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(tester.getRect(boton).bottom,
-            lessThanOrEqualTo(tamano.height - teclado));
+        expect(
+          tester.getRect(boton).bottom,
+          lessThanOrEqualTo(tamano.height - teclado),
+        );
       });
     }
 
-    testWidgets('fin de partida con 4 jugadores en ${_nombre(tamano)}',
-        (tester) async {
+    testWidgets('fin de partida con 4 jugadores en ${_nombre(tamano)}', (
+      tester,
+    ) async {
       _usarPantalla(tester, tamano);
       await tester.pumpWidget(
         MaterialApp(
@@ -89,7 +97,10 @@ void main() {
       final dialogo = find.byType(AlertDialog);
       expect(dialogo, findsOneWidget);
       // Nadie tiene puntos: empatan los 4 y salen las 4 líneas.
-      expect(find.text('Empate entre los jugadores 1, 2, 3, 4'), findsOneWidget);
+      expect(
+        find.text('Empate entre los jugadores 1, 2, 3, 4'),
+        findsOneWidget,
+      );
       for (var j = 1; j <= 4; j++) {
         expect(
           find.descendant(

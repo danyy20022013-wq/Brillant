@@ -10,7 +10,13 @@ sealed class AuthEstado extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Nadie ha iniciado sesión (o se está comprobando).
+/// Al abrir la app: se está comprobando si hay una sesión guardada.
+class AuthComprobando extends AuthEstado {
+  const AuthComprobando();
+}
+
+/// Nadie ha iniciado sesión. [cargando] indica que se está enviando el
+/// formulario; [error], el mensaje a mostrar.
 class AuthSinSesion extends AuthEstado {
   final bool cargando;
   final String? error;
@@ -33,10 +39,23 @@ class AuthConSesion extends AuthEstado {
 class AuthCubit extends Cubit<AuthEstado> {
   final AuthRepository _repositorio;
 
-  AuthCubit(this._repositorio) : super(const AuthSinSesion());
+  AuthCubit(this._repositorio) : super(const AuthComprobando());
 
   bool get _cargando =>
       state is AuthSinSesion && (state as AuthSinSesion).cargando;
+
+  /// Al abrir la app: restaura la sesión guardada si sigue valiendo. Si el
+  /// token venció (401), el repositorio lo borra y se vuelve al login. Si el
+  /// servidor no responde, se va al login con el mensaje del error.
+  Future<void> iniciar() async {
+    if (state is! AuthComprobando) return;
+    try {
+      final usuario = await _repositorio.restaurarSesion();
+      emit(usuario == null ? const AuthSinSesion() : AuthConSesion(usuario));
+    } on AuthException catch (e) {
+      emit(AuthSinSesion(error: e.mensaje));
+    }
+  }
 
   Future<void> iniciarSesion({
     required String correo,

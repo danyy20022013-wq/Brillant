@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'almacen_sesion.dart';
 import 'auth_repository.dart';
 
 /// Dirección del servidor. Se cambia al compilar o ejecutar con
@@ -52,18 +53,35 @@ class ApiAuthRepository implements AuthRepository {
   final http.Client _cliente;
   final Duration tiempoLimite;
 
-  /// Token de la sesión actual.
+  /// Dónde se guarda el token entre una apertura y otra.
+  final AlmacenSesion _almacen;
+
+  /// Token de la sesión actual. Se guarda también en [_almacen]; si guardar
+  /// falla (por ejemplo en la web), la sesión sigue funcionando hasta cerrar
+  /// la app.
   String? _token;
 
   ApiAuthRepository({
     String urlBase = urlServidorPorDefecto,
     http.Client? cliente,
+    AlmacenSesion? almacen,
     this.tiempoLimite = const Duration(seconds: 10),
   }) : _base = Uri.parse(urlBase.endsWith('/') ? urlBase : '$urlBase/'),
-       _cliente = cliente ?? http.Client();
+       _cliente = cliente ?? http.Client(),
+       _almacen = almacen ?? AlmacenSesionEnMemoria();
 
-  /// Hay un token guardado en esta sesión.
+  /// Hay un token en esta sesión.
   bool get tieneToken => _token != null;
+
+  Future<void> _guardarToken(String token) async {
+    _token = token;
+    await _almacen.guardarToken(token);
+  }
+
+  Future<void> _olvidarToken() async {
+    _token = null;
+    await _almacen.borrarToken();
+  }
 
   @override
   Future<Usuario> registrar({
@@ -99,18 +117,19 @@ class ApiAuthRepository implements AuthRepository {
       throw const AuthException(MensajesServidor.respuestaRara);
     }
     final usuario = _usuario(datos);
-    _token = token;
+    await _guardarToken(token);
     return usuario;
   }
 
   @override
   Future<Usuario?> restaurarSesion() async {
-    final token = _token;
+    final token = _token ??= await _almacen.leerToken();
     if (token == null) return null;
 
     final respuesta = await _enviar('GET', 'cuenta', token: token);
     if (respuesta.statusCode == 401) {
-      _token = null;
+      // Token inválido o vencido: se olvida y hay que iniciar sesión.
+      await _olvidarToken();
       return null;
     }
     if (respuesta.statusCode != 200) throw _error(respuesta);
@@ -120,12 +139,12 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<void> cerrarSesion() async {
     // Los tokens no se guardan en el servidor: basta con olvidarlo.
-    _token = null;
+    await _olvidarToken();
   }
 
   @override
   Future<void> borrarCuenta(String contrasena) async {
-    final token = _token;
+    final token = _token ??= await _almacen.leerToken();
     if (token == null) throw const SesionVencidaException();
 
     final respuesta = await _enviar(
@@ -136,9 +155,9 @@ class ApiAuthRepository implements AuthRepository {
     );
     switch (respuesta.statusCode) {
       case 204:
-        _token = null;
+        await _olvidarToken();
       case 401:
-        _token = null;
+        await _olvidarToken();
         throw const SesionVencidaException();
       case 403:
         // La contraseña no es correcta: la sesión sigue valiendo.

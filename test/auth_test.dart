@@ -91,12 +91,12 @@ void main() {
       );
 
       Matcher incorrecto() => throwsA(
-            isA<AuthException>().having(
-              (e) => e.mensaje,
-              'mensaje',
-              'Correo o contraseña incorrectos',
-            ),
-          );
+        isA<AuthException>().having(
+          (e) => e.mensaje,
+          'mensaje',
+          'Correo o contraseña incorrectos',
+        ),
+      );
 
       expect(
         repo.iniciarSesion(correo: 'dany@correo.com', contrasena: 'mala'),
@@ -123,50 +123,58 @@ void main() {
       expect(await repo.restaurarSesion(), isNull);
     });
 
-    test('borrarCuenta con la contraseña correcta borra y cierra la sesión',
-        () async {
-      final repo = _repo();
-      await repo.registrar(
-        nombre: 'dany',
-        correo: 'dany@correo.com',
-        contrasena: '123456',
-      );
+    test(
+      'borrarCuenta con la contraseña correcta borra y cierra la sesión',
+      () async {
+        final repo = _repo();
+        await repo.registrar(
+          nombre: 'dany',
+          correo: 'dany@correo.com',
+          contrasena: '123456',
+        );
 
-      await repo.borrarCuenta('123456');
+        await repo.borrarCuenta('123456');
 
-      expect(await repo.restaurarSesion(), isNull);
-      expect(
-        repo.iniciarSesion(correo: 'dany@correo.com', contrasena: '123456'),
-        throwsA(isA<AuthException>()),
-      );
-      // Se puede volver a registrar con los mismos datos.
-      final otra = await repo.registrar(
-        nombre: 'dany',
-        correo: 'dany@correo.com',
-        contrasena: '123456',
-      );
-      expect(otra.nombre, 'dany');
-    });
+        expect(await repo.restaurarSesion(), isNull);
+        expect(
+          repo.iniciarSesion(correo: 'dany@correo.com', contrasena: '123456'),
+          throwsA(isA<AuthException>()),
+        );
+        // Se puede volver a registrar con los mismos datos.
+        final otra = await repo.registrar(
+          nombre: 'dany',
+          correo: 'dany@correo.com',
+          contrasena: '123456',
+        );
+        expect(otra.nombre, 'dany');
+      },
+    );
 
-    test('borrarCuenta con la contraseña incorrecta no borra ni cierra',
-        () async {
-      final repo = _repo();
-      await repo.registrar(
-        nombre: 'dany',
-        correo: 'dany@correo.com',
-        contrasena: '123456',
-      );
+    test(
+      'borrarCuenta con la contraseña incorrecta no borra ni cierra',
+      () async {
+        final repo = _repo();
+        await repo.registrar(
+          nombre: 'dany',
+          correo: 'dany@correo.com',
+          contrasena: '123456',
+        );
 
-      await expectLater(
-        repo.borrarCuenta('mala12'),
-        throwsA(
-          isA<AuthException>()
-              .having((e) => e.mensaje, 'mensaje', 'La contraseña no es correcta')
-              .having((e) => e, 'tipo', isNot(isA<SesionVencidaException>())),
-        ),
-      );
-      expect((await repo.restaurarSesion())?.nombre, 'dany');
-    });
+        await expectLater(
+          repo.borrarCuenta('mala12'),
+          throwsA(
+            isA<AuthException>()
+                .having(
+                  (e) => e.mensaje,
+                  'mensaje',
+                  'La contraseña no es correcta',
+                )
+                .having((e) => e, 'tipo', isNot(isA<SesionVencidaException>())),
+          ),
+        );
+        expect((await repo.restaurarSesion())?.nombre, 'dany');
+      },
+    );
 
     test('borrarCuenta sin sesión es sesión vencida', () async {
       await expectLater(
@@ -177,8 +185,14 @@ void main() {
   });
 
   group('AuthCubit', () {
-    test('empieza sin sesión', () {
+    test('empieza comprobando la sesión', () {
       final cubit = AuthCubit(_repo());
+      expect(cubit.state, const AuthComprobando());
+    });
+
+    test('iniciar sin sesión guardada va al inicio de sesión', () async {
+      final cubit = AuthCubit(_repo());
+      await cubit.iniciar();
       expect(cubit.state, const AuthSinSesion());
     });
 

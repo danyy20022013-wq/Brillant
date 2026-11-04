@@ -19,7 +19,9 @@ class BrilliantApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => AuthCubit(repositorio ?? InMemoryAuthRepository()),
+      // Al abrir, se comprueba si hay una sesión guardada.
+      create: (_) =>
+          AuthCubit(repositorio ?? InMemoryAuthRepository())..iniciar(),
       child: MaterialApp(
         title: 'Brilliant',
         debugShowCheckedModeBanner: false,
@@ -37,7 +39,8 @@ class BrilliantApp extends StatelessWidget {
   }
 }
 
-/// Sin sesión muestra el inicio de sesión; con sesión, Buscar partida.
+/// Mientras se comprueba la sesión muestra una espera; sin sesión, el inicio
+/// de sesión; con sesión, Buscar partida.
 class _Puerta extends StatelessWidget {
   const _Puerta();
 
@@ -45,14 +48,40 @@ class _Puerta extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthEstado>(
       builder: (context, estado) {
-        if (estado is AuthConSesion) {
-          return BuscarPartidaScreen(
-            usuario: estado.usuario,
+        return switch (estado) {
+          AuthComprobando() => const PantallaComprobandoSesion(),
+          AuthConSesion(:final usuario) => BuscarPartidaScreen(
+            usuario: usuario,
             alCerrarSesion: () => context.read<AuthCubit>().cerrarSesion(),
-          );
-        }
-        return const LoginScreen();
+          ),
+          AuthSinSesion() => const LoginScreen(),
+        };
       },
+    );
+  }
+}
+
+/// Pantalla breve al abrir la app, mientras se comprueba la sesión guardada.
+class PantallaComprobandoSesion extends StatelessWidget {
+  const PantallaComprobandoSesion({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF14162B),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Comprobando tu sesión…',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
