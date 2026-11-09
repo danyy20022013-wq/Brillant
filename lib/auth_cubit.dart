@@ -16,15 +16,21 @@ class AuthComprobando extends AuthEstado {
 }
 
 /// Nadie ha iniciado sesión. [cargando] indica que se está enviando el
-/// formulario; [error], el mensaje a mostrar.
+/// formulario; [error], el mensaje a mostrar; [sinServidor], que el error
+/// fue no poder hablar con el servidor (se muestra un aviso más amable).
 class AuthSinSesion extends AuthEstado {
   final bool cargando;
   final String? error;
+  final bool sinServidor;
 
-  const AuthSinSesion({this.cargando = false, this.error});
+  const AuthSinSesion({
+    this.cargando = false,
+    this.error,
+    this.sinServidor = false,
+  });
 
   @override
-  List<Object?> get props => [cargando, error];
+  List<Object?> get props => [cargando, error, sinServidor];
 }
 
 class AuthConSesion extends AuthEstado {
@@ -44,6 +50,12 @@ class AuthCubit extends Cubit<AuthEstado> {
   bool get _cargando =>
       state is AuthSinSesion && (state as AuthSinSesion).cargando;
 
+  /// Estado de login con el error [e], marcando si fue el servidor caído.
+  static AuthSinSesion _sinSesionPor(AuthException e) => AuthSinSesion(
+    error: e.mensaje,
+    sinServidor: e is ServidorNoDisponibleException,
+  );
+
   /// Al abrir la app: restaura la sesión guardada si sigue valiendo. Si el
   /// token venció (401), el repositorio lo borra y se vuelve al login. Si el
   /// servidor no responde, se va al login con el mensaje del error.
@@ -53,7 +65,7 @@ class AuthCubit extends Cubit<AuthEstado> {
       final usuario = await _repositorio.restaurarSesion();
       emit(usuario == null ? const AuthSinSesion() : AuthConSesion(usuario));
     } on AuthException catch (e) {
-      emit(AuthSinSesion(error: e.mensaje));
+      emit(_sinSesionPor(e));
     }
   }
 
@@ -70,7 +82,7 @@ class AuthCubit extends Cubit<AuthEstado> {
       );
       emit(AuthConSesion(usuario));
     } on AuthException catch (e) {
-      emit(AuthSinSesion(error: e.mensaje));
+      emit(_sinSesionPor(e));
     }
   }
 
@@ -89,7 +101,7 @@ class AuthCubit extends Cubit<AuthEstado> {
       );
       emit(AuthConSesion(usuario));
     } on AuthException catch (e) {
-      emit(AuthSinSesion(error: e.mensaje));
+      emit(_sinSesionPor(e));
     }
   }
 

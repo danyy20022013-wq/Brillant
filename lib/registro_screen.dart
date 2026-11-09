@@ -33,10 +33,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
   void _enviar() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     context.read<AuthCubit>().registrar(
-          nombre: _nombre.text.trim(),
-          correo: _correo.text.trim(),
-          contrasena: _contrasena.text,
-        );
+      nombre: _nombre.text.trim(),
+      correo: _correo.text.trim(),
+      contrasena: _contrasena.text,
+    );
   }
 
   @override
@@ -57,10 +57,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: BlocBuilder<AuthCubit, AuthEstado>(
                   builder: (context, estado) {
-                    final cargando =
-                        estado is AuthSinSesion && estado.cargando;
-                    final error =
-                        estado is AuthSinSesion ? estado.error : null;
+                    final cargando = estado is AuthSinSesion && estado.cargando;
+                    final error = estado is AuthSinSesion ? estado.error : null;
 
                     return Form(
                       key: _formKey,
@@ -128,15 +126,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                             alEnviar: (_) => _enviar(),
                           ),
                           if (error != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Text(
-                                error,
-                                key: const Key('error-auth'),
-                                textAlign: TextAlign.center,
-                                style:
-                                    const TextStyle(color: Color(0xFFFF6B6B)),
-                              ),
+                            AvisoErrorAuth(
+                              error: error,
+                              sinServidor:
+                                  estado is AuthSinSesion && estado.sinServidor,
                             ),
                           const SizedBox(height: 20),
                           SizedBox(

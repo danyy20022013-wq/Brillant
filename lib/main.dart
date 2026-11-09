@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'almacen_sesion.dart';
+import 'api_auth_repository.dart';
 import 'auth_cubit.dart';
 import 'auth_repository.dart';
 import 'buscar_partida_screen.dart';
@@ -11,7 +13,9 @@ void main() {
 }
 
 class BrilliantApp extends StatelessWidget {
-  /// Dónde viven las cuentas. Por defecto, en memoria.
+  /// Dónde viven las cuentas. Por defecto, el servidor de Brilliant (la
+  /// dirección sale de --dart-define=API_URL) con la sesión guardada en
+  /// flutter_secure_storage. Las pruebas pasan InMemoryAuthRepository.
   final AuthRepository? repositorio;
 
   const BrilliantApp({super.key, this.repositorio});
@@ -20,8 +24,9 @@ class BrilliantApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       // Al abrir, se comprueba si hay una sesión guardada.
-      create: (_) =>
-          AuthCubit(repositorio ?? InMemoryAuthRepository())..iniciar(),
+      create: (_) => AuthCubit(
+        repositorio ?? ApiAuthRepository(almacen: AlmacenSesionSegura()),
+      )..iniciar(),
       child: MaterialApp(
         title: 'Brilliant',
         debugShowCheckedModeBanner: false,

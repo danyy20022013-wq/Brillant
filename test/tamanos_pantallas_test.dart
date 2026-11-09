@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juego_brilliant/auth_repository.dart';
 import 'package:juego_brilliant/juego_screen.dart';
 import 'package:juego_brilliant/main.dart';
 
@@ -25,7 +26,11 @@ void main() {
 
       testWidgets('login en ${_nombre(tamano)} $conTeclado', (tester) async {
         _usarPantalla(tester, tamano, teclado: teclado);
-        await tester.pumpWidget(const BrilliantApp());
+        await tester.pumpWidget(
+          BrilliantApp(
+            repositorio: InMemoryAuthRepository(retraso: Duration.zero),
+          ),
+        );
         // Espera a que termine de comprobar la sesión guardada.
         await tester.pumpAndSettle();
         await tester.pumpAndSettle();
@@ -48,7 +53,11 @@ void main() {
 
       testWidgets('registro en ${_nombre(tamano)} $conTeclado', (tester) async {
         _usarPantalla(tester, tamano, teclado: teclado);
-        await tester.pumpWidget(const BrilliantApp());
+        await tester.pumpWidget(
+          BrilliantApp(
+            repositorio: InMemoryAuthRepository(retraso: Duration.zero),
+          ),
+        );
         // Espera a que termine de comprobar la sesión guardada.
         await tester.pumpAndSettle();
         final crear = find.text('Crear cuenta');

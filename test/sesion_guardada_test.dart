@@ -182,7 +182,10 @@ void main() {
 
         expect(
           cubit.state,
-          const AuthSinSesion(error: MensajesServidor.sinConexion),
+          const AuthSinSesion(
+            error: MensajesServidor.sinConexion,
+            sinServidor: true,
+          ),
         );
         expect(await almacen.leerToken(), _token);
       },

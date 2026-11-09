@@ -78,3 +78,54 @@ class _CampoContrasenaState extends State<CampoContrasena> {
     );
   }
 }
+
+/// Error del inicio de sesión o del registro. Si [sinServidor] es true se
+/// muestra un aviso amable (el servidor no está disponible); si no, el
+/// mensaje en rojo.
+class AvisoErrorAuth extends StatelessWidget {
+  final String error;
+  final bool sinServidor;
+
+  const AvisoErrorAuth({
+    super.key,
+    required this.error,
+    this.sinServidor = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mensaje = Text(
+      error,
+      key: const Key('error-auth'),
+      textAlign: TextAlign.center,
+      style: TextStyle(color: sinServidor ? Colors.white70 : _rojo),
+    );
+    if (!sinServidor) {
+      return Padding(padding: const EdgeInsets.only(top: 12), child: mensaje);
+    }
+
+    return Container(
+      key: const Key('aviso-sin-servidor'),
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _dorado.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_rounded, color: _dorado),
+          const SizedBox(height: 6),
+          const Text(
+            'El servidor no está disponible ahora',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          mensaje,
+        ],
+      ),
+    );
+  }
+}

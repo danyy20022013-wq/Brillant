@@ -30,9 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _enviar() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     context.read<AuthCubit>().iniciarSesion(
-          correo: _correo.text.trim(),
-          contrasena: _contrasena.text,
-        );
+      correo: _correo.text.trim(),
+      contrasena: _contrasena.text,
+    );
   }
 
   void _irARegistro() {
@@ -102,14 +102,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           alEnviar: (_) => _enviar(),
                         ),
                         if (error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              error,
-                              key: const Key('error-auth'),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Color(0xFFFF6B6B)),
-                            ),
+                          AvisoErrorAuth(
+                            error: error,
+                            sinServidor:
+                                estado is AuthSinSesion && estado.sinServidor,
                           ),
                         const SizedBox(height: 20),
                         SizedBox(
