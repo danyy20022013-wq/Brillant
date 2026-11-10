@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
+import 'package:juego_brilliant/tipo.dart';
 import 'package:juego_brilliant/numeros_iniciales_screen.dart';
 
 /// La pantalla de números iniciales sin pasar por el inicio de sesión.

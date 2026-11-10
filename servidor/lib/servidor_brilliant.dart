@@ -1,4 +1,4 @@
-/// Servidor de cuentas de Brilliant.
+/// Servidor de Brilliant: cuentas y multijugador.
 library;
 
 export 'src/aplicacion.dart';
@@ -14,3 +14,10 @@ export 'src/rutas_cuentas.dart';
 export 'src/servicios.dart';
 export 'src/tokens.dart';
 export 'src/validacion.dart';
+export 'src/multijugador/canal.dart';
+export 'src/multijugador/codigos_sala.dart';
+export 'src/multijugador/multijugador.dart';
+export 'src/multijugador/partida.dart';
+export 'src/multijugador/programador.dart';
+export 'src/multijugador/ruta_ws.dart';
+export 'src/multijugador/sala.dart';

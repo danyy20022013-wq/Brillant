@@ -1,19 +1,114 @@
-import 'package:equatable/equatable.dart';
-
-import 'tablero_layout.dart';
 import 'tipo.dart';
+
+const _r = Tipo.rojo;
+const _a = Tipo.amarillo;
+const _v = Tipo.verde;
+const _z = Tipo.azul;
+const _m = Tipo.morado;
+const _b = Tipo.blanco;
+const _n = Tipo.naranja46;
+const _o = Tipo.naranja13;
+
+/// Tablero del nivel 1: 7 filas x 7 columnas, cada casilla con su tipo.
+const List<List<Tipo>> layoutTableroNivel1 = [
+  [_a, _v, _z, _m, _m, _m, _a],
+  [_v, _v, _z, _z, _m, _m, _v],
+  [_v, _r, _r, _z, _m, _v, _v],
+  [_v, _r, _m, _a, _v, _v, _v],
+  [_v, _r, _m, _m, _r, _r, _z],
+  [_r, _r, _m, _r, _r, _z, _z],
+  [_a, _m, _m, _r, _r, _z, _a],
+];
+
+class PosicionCasilla {
+  final int fila;
+  final int columna;
+
+  const PosicionCasilla(this.fila, this.columna);
+}
+
+/// Las 6 casillas con estrella. El índice coincide con el de
+/// NumerosInicialesCubit.
+const List<PosicionCasilla> casillasEstrella = [
+  PosicionCasilla(0, 2), // azul
+  PosicionCasilla(1, 5), // morado
+  PosicionCasilla(3, 1), // rojo
+  PosicionCasilla(3, 4), // verde
+  PosicionCasilla(5, 2), // morado
+  PosicionCasilla(6, 4), // rojo
+];
+
+/// Tablero del mapa 2.
+const List<List<Tipo>> layoutTableroNivel2 = [
+  [_m, _m, _m, _b, _v, _v, _v],
+  [_m, _a, _z, _z, _z, _a, _v],
+  [_m, _r, _r, _z, _z, _r, _v],
+  [_r, _r, _r, _a, _r, _r, _r],
+  [_v, _r, _z, _z, _r, _r, _m],
+  [_v, _a, _z, _z, _z, _a, _m],
+  [_v, _v, _v, _b, _m, _m, _m],
+];
+
+const List<PosicionCasilla> casillasEstrellaNivel2 = [
+  PosicionCasilla(0, 4), // verde
+  PosicionCasilla(2, 0), // morado
+  PosicionCasilla(3, 2), // rojo
+  PosicionCasilla(4, 5), // rojo
+  PosicionCasilla(5, 1), // amarillo
+  PosicionCasilla(6, 4), // morado
+];
+
+/// Tablero del mapa 3.
+const List<List<Tipo>> layoutTableroNivel3 = [
+  [_a, _a, _m, _b, _m, _a, _a],
+  [_b, _a, _m, _m, _m, _a, _b],
+  [_r, _r, _r, _m, _r, _r, _r],
+  [_r, _r, _r, _b, _r, _r, _r],
+  [_v, _z, _z, _z, _z, _z, _v],
+  [_v, _v, _v, _v, _v, _v, _v],
+  [_m, _m, _m, _b, _m, _m, _m],
+];
+
+const List<PosicionCasilla> casillasEstrellaNivel3 = [
+  PosicionCasilla(1, 2), // morado
+  PosicionCasilla(1, 5), // amarillo
+  PosicionCasilla(3, 3), // blanco
+  PosicionCasilla(4, 1), // azul
+  PosicionCasilla(4, 6), // verde
+  PosicionCasilla(6, 2), // morado
+];
+
+/// Tablero del mapa 4.
+const List<List<Tipo>> layoutTableroNivel4 = [
+  [_n, _n, _n, _n, _n, _n, _n],
+  [_a, _r, _z, _v, _z, _r, _a],
+  [_r, _r, _m, _m, _m, _r, _r],
+  [_a, _v, _z, _m, _z, _v, _a],
+  [_r, _r, _m, _m, _m, _r, _r],
+  [_a, _r, _z, _v, _z, _r, _a],
+  [_o, _o, _o, _o, _o, _o, _o],
+];
+
+const List<PosicionCasilla> casillasEstrellaNivel4 = [
+  PosicionCasilla(0, 4), // naranja 4-6
+  PosicionCasilla(2, 2), // morado
+  PosicionCasilla(2, 5), // rojo
+  PosicionCasilla(3, 0), // amarillo
+  PosicionCasilla(5, 4), // azul
+  PosicionCasilla(6, 1), // naranja 1-3
+];
 
 /// Nombre del tipo en pantalla. Tipo es "sealed": si se agrega un tipo
 /// nuevo y falta aquí, el compilador avisa.
 String nombreDe(Tipo tipo) => switch (tipo) {
-      TipoRojo() => 'Rojo',
-      TipoAmarillo() => 'Amarillo',
-      TipoVerde() => 'Verde',
-      TipoAzul() => 'Azul',
-      TipoMorado() => 'Morado',
-      TipoBlanco() => 'Blanco',
-      TipoNaranja(:final minimo, :final maximo) => 'Naranja $minimo-$maximo',
-    };
+  TipoRojo() => 'Rojo',
+  TipoAmarillo() => 'Amarillo',
+  TipoVerde() => 'Verde',
+  TipoAzul() => 'Azul',
+  TipoMorado() => 'Morado',
+  TipoBlanco() => 'Blanco',
+  TipoNaranja(:final minimo, :final maximo) => 'Naranja $minimo-$maximo',
+};
 
 /// Una zona del tablero: su tipo, las casillas que la forman y los puntos
 /// para el 1.º, 2.º y 3.º jugador que la llenen.
@@ -32,7 +127,7 @@ class ZonaDef {
 }
 
 /// Movimientos permitidos: arriba, abajo, izquierda y derecha (sin diagonales).
-const List<(int, int)> _vecinos = [(1, 0), (-1, 0), (0, 1), (0, -1)];
+const List<(int, int)> direccionesVecinas = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
 /// Todas las zonas del tablero y a qué zona pertenece cada casilla.
 class EstructuraTablero {
@@ -79,7 +174,7 @@ class EstructuraTablero {
           while (pendientes.isNotEmpty) {
             final (actualF, actualC) = pendientes.removeLast();
             celdas.add((actualF, actualC));
-            for (final (df, dc) in _vecinos) {
+            for (final (df, dc) in direccionesVecinas) {
               final nf = actualF + df;
               final nc = actualC + dc;
               if (nf < 0 || nf >= filas || nc < 0 || nc >= columnas) continue;
@@ -104,15 +199,18 @@ class EstructuraTablero {
     for (final (tipo, celdas) in grupos) {
       final numero = (contador[tipo] ?? 0) + 1;
       contador[tipo] = numero;
-      zonas.add(ZonaDef(
-        nombre: total[tipo] == 1
-            ? nombreDe(tipo)
-            : '${nombreDe(tipo)} $numero',
-        tipo: tipo,
-        celdas: celdas,
-        puntos: puntos[tipo] ??
-            (throw ArgumentError('Faltan los puntos de ${nombreDe(tipo)}')),
-      ));
+      zonas.add(
+        ZonaDef(
+          nombre: total[tipo] == 1
+              ? nombreDe(tipo)
+              : '${nombreDe(tipo)} $numero',
+          tipo: tipo,
+          celdas: celdas,
+          puntos:
+              puntos[tipo] ??
+              (throw ArgumentError('Faltan los puntos de ${nombreDe(tipo)}')),
+        ),
+      );
     }
     return EstructuraTablero(zonas, indice);
   }
@@ -136,10 +234,10 @@ class Nivel {
     required Set<Tipo> zonaUnica,
     required Map<Tipo, List<int>> puntos,
   }) : estructura = EstructuraTablero.desdeLayout(
-          layout,
-          zonaUnica: zonaUnica,
-          puntos: puntos,
-        );
+         layout,
+         zonaUnica: zonaUnica,
+         puntos: puntos,
+       );
 
   bool esEstrella(int fila, int columna) =>
       estrellas.any((p) => p.fila == fila && p.columna == columna);
@@ -208,86 +306,10 @@ final Nivel nivel4 = Nivel(
 /// Los mapas que se pueden elegir, en orden.
 final List<Nivel> nivelesDisponibles = [nivel1, nivel2, nivel3, nivel4];
 
-/// El tablero de UN jugador durante la partida, en un mapa.
-class Juego extends Equatable {
-  final List<List<int?>> tablero;
-
-  /// Mapa en el que se juega.
-  final Nivel nivel;
-
-  const Juego._(this.tablero, this.nivel);
-
-  /// Crea el tablero poniendo los 6 números iniciales en las estrellas
-  /// del [nivel] (por defecto el mapa 1).
-  factory Juego.inicial(List<int> iniciales, {Nivel? nivel}) {
-    final mapa = nivel ?? nivel1;
-    final filas = mapa.layout.length;
-    final columnas = mapa.layout[0].length;
-    final tablero =
-        List.generate(filas, (_) => List<int?>.filled(columnas, null));
-    for (var i = 0; i < mapa.estrellas.length; i++) {
-      final p = mapa.estrellas[i];
-      tablero[p.fila][p.columna] = iniciales[i];
-    }
-    return Juego._(tablero, mapa);
+/// El mapa con ese [numero], o null si no existe.
+Nivel? nivelPorNumero(int numero) {
+  for (final mapa in nivelesDisponibles) {
+    if (mapa.numero == numero) return mapa;
   }
-
-  EstructuraTablero get _estructura => nivel.estructura;
-
-  /// Números que hay ahora mismo en la zona [z].
-  List<int> valoresDeZona(int z) {
-    final resultado = <int>[];
-    for (final (f, c) in _estructura.zonas[z].celdas) {
-      final v = tablero[f][c];
-      if (v != null) resultado.add(v);
-    }
-    return resultado;
-  }
-
-  bool zonaLlena(int z) =>
-      _estructura.zonas[z].celdas.every((p) => tablero[p.$1][p.$2] != null);
-
-  /// true cuando todas las zonas del tablero están llenas.
-  bool get estaLleno {
-    for (var z = 0; z < _estructura.zonas.length; z++) {
-      if (!zonaLlena(z)) return false;
-    }
-    return true;
-  }
-
-  /// Casillas vacías donde se puede poner [aColocar], pegadas (arriba,
-  /// abajo, izquierda o derecha) a una casilla que tenga el número [ancla]
-  /// y respetando la regla de color de la zona.
-  Set<(int, int)> jugadasPosibles({required int ancla, required int aColocar}) {
-    final resultado = <(int, int)>{};
-    for (var f = 0; f < tablero.length; f++) {
-      for (var c = 0; c < tablero[f].length; c++) {
-        if (tablero[f][c] != ancla) continue;
-        for (final (df, dc) in _vecinos) {
-          final nf = f + df;
-          final nc = c + dc;
-          if (nf < 0 || nf >= tablero.length) continue;
-          if (nc < 0 || nc >= tablero[nf].length) continue;
-          if (tablero[nf][nc] != null) continue;
-          final z = _estructura.indiceZona[nf][nc];
-          final tipo = _estructura.zonas[z].tipo;
-          if (tipo.esPosibleAgregar(valoresDeZona(z), aColocar)) {
-            resultado.add((nf, nc));
-          }
-        }
-      }
-    }
-    return resultado;
-  }
-
-  /// Devuelve un tablero nuevo con [valor] puesto en la casilla.
-  /// Nada se borra: una zona llena se queda llena.
-  Juego colocar(int fila, int columna, int valor) {
-    final nuevo = [for (final f in tablero) [...f]];
-    nuevo[fila][columna] = valor;
-    return Juego._(nuevo, nivel);
-  }
-
-  @override
-  List<Object?> get props => [nivel.numero, tablero];
+  return null;
 }

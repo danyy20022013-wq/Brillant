@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
+import 'package:juego_brilliant/tipo.dart';
 import 'package:juego_brilliant/juego_screen.dart';
 import 'package:juego_brilliant/numeros_iniciales_screen.dart';
 

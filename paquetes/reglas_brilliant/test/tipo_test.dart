@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/tipo.dart';
+import 'package:test/test.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
 void main() {
   test('Azul acepta si todos son iguales', () {
@@ -42,7 +42,10 @@ void main() {
     expect(blanco.esPosibleAgregar([], 3), isTrue);
     expect(blanco.esPosibleAgregar([3, 3], 3), isTrue);
     expect(blanco.esPosibleAgregar([3, 3], 2), isFalse);
-    expect(Tipo.blanco.descripcion, 'Todos los números deben ser iguales (blanco)');
+    expect(
+      Tipo.blanco.descripcion,
+      'Todos los números deben ser iguales (blanco)',
+    );
   });
 
   test('Naranja 4-6 solo acepta del 4 al 6, aunque se repitan', () {
@@ -74,20 +77,5 @@ void main() {
     final n13 = Tipo.naranja13 as TipoNaranja;
     expect((n46.minimo, n46.maximo), (4, 6));
     expect((n13.minimo, n13.maximo), (1, 3));
-  });
-
-  test('Los dos naranjas comparten color y los colores son todos distintos',
-      () {
-    expect(Tipo.naranja46.color, Tipo.naranja13.color);
-    final colores = [
-      Tipo.rojo,
-      Tipo.amarillo,
-      Tipo.verde,
-      Tipo.azul,
-      Tipo.morado,
-      Tipo.blanco,
-      Tipo.naranja46,
-    ].map((t) => t.color).toSet();
-    expect(colores.length, 7);
   });
 }

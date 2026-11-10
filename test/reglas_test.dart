@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juego_brilliant/auth_repository.dart';
 import 'package:juego_brilliant/buscar_partida_screen.dart';
-import 'package:juego_brilliant/juego.dart';
+import 'package:juego_brilliant/tipo.dart';
 import 'package:juego_brilliant/juego_screen.dart';
 import 'package:juego_brilliant/numeros_iniciales_screen.dart';
 import 'package:juego_brilliant/reglas.dart';
-import 'package:juego_brilliant/tipo.dart';
 
 Future<void> _abrirReglas(
   WidgetTester tester, {

@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
-import 'package:juego_brilliant/numeros_iniciales_cubit.dart';
-import 'package:juego_brilliant/tablero_layout.dart';
 import 'package:juego_brilliant/tipo.dart';
+import 'package:juego_brilliant/numeros_iniciales_cubit.dart';
 
 /// Mapa de prueba: todo rojo, una sola zona con las 6 estrellas.
 /// Sirve para comprobar que se cuentan los demás números de la zona.

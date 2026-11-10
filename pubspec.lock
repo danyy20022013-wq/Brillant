@@ -416,6 +416,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  reglas_brilliant:
+    dependency: "direct main"
+    description:
+      path: "paquetes/reglas_brilliant"
+      relative: true
+    source: path
+    version: "1.0.0"
   sky_engine:
     dependency: transitive
     description: flutter

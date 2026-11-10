@@ -2,10 +2,9 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
-import 'juego.dart';
 import 'movimiento_registrado.dart';
-import 'tipo.dart';
 
 export 'movimiento_registrado.dart';
 
@@ -110,26 +109,16 @@ class JuegoEstado extends Equatable {
   /// true si con estos dados hay al menos una jugada.
   bool get hayJugadas {
     if (!hayDados) return false;
-    return juego.jugadasPosibles(ancla: dado1!, aColocar: dado2!).isNotEmpty ||
-        juego.jugadasPosibles(ancla: dado2!, aColocar: dado1!).isNotEmpty;
+    return juego.hayJugadaCon(dado1!, dado2!);
   }
 
   /// Puntos que [jugadorIdx] obtuvo en la zona [zona], según el lugar
   /// en que la completó.
-  int puntosEn(int jugadorIdx, int zona) {
-    final lugar = ordenZonas[zona].indexOf(jugadorIdx);
-    if (lugar == -1) return 0;
-    final tabla = nivel.estructura.zonas[zona].puntos;
-    return lugar < tabla.length ? tabla[lugar] : 0;
-  }
+  int puntosEn(int jugadorIdx, int zona) =>
+      puntosEnZona(nivel.estructura, ordenZonas, jugadorIdx, zona);
 
-  int puntajeDe(int jugadorIdx) {
-    var total = 0;
-    for (var z = 0; z < ordenZonas.length; z++) {
-      total += puntosEn(jugadorIdx, z);
-    }
-    return total;
-  }
+  int puntajeDe(int jugadorIdx) =>
+      puntajeTotal(nivel.estructura, ordenZonas, jugadorIdx);
 
   /// Copia el estado. Los dados, el ancla, el mensaje y la zona completada
   /// NO se conservan salvo que se pasen.
@@ -253,9 +242,8 @@ class JuegoCubit extends Cubit<JuegoEstado> {
     final z = estructura.indiceZona[fila][columna];
     if (!antes.zonaLlena(z) && despues.zonaLlena(z)) {
       orden[z].add(j);
-      final tabla = estructura.zonas[z].puntos;
       final lugar = orden[z].length - 1;
-      final puntos = lugar < tabla.length ? tabla[lugar] : 0;
+      final puntos = puntosPorLugar(estructura.zonas[z].puntos, lugar);
       final nombre = estructura.zonas[z].nombre;
       final quien = state.esIndividual ? 'Completaste' : 'J${j + 1} completó';
       mensaje = puntos > 0

@@ -1,5 +1,5 @@
 name: servidor_brilliant
-description: Servidor de cuentas de Brilliant (registro, inicio de sesión y borrado de cuenta).
+description: Servidor de Brilliant (cuentas y multijugador por WebSocket).
 publish_to: none
 version: 1.0.0
 
@@ -9,9 +9,13 @@ environment:
 dependencies:
   bcrypt: ^1.2.0
   dart_jsonwebtoken: ^3.4.1
+  reglas_brilliant:
+    path: ../paquetes/reglas_brilliant
   shelf: ^1.4.3
   shelf_router: ^1.1.5
+  shelf_web_socket: ^3.0.0
   sqlite3: ^3.8.0
+  web_socket_channel: ^3.0.3
 
 dev_dependencies:
   test: ^1.33.0

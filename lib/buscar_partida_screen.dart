@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'auth_repository.dart';
 import 'eliminar_cuenta_dialogo.dart';
-import 'juego.dart';
 import 'numeros_iniciales_screen.dart';
 import 'reglas.dart';
+import 'tipo.dart';
 
 const _fondo = Color(0xFF14162B);
 const _panel = Color(0xFF1F2244);

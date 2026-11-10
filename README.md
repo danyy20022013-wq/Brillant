@@ -45,7 +45,8 @@ zona. Llenar zonas da puntos según el orden en que se llenan.
 ## Requisitos
 
 - Flutter con Dart 3.9 o superior (`sdk: ^3.9.0` en `pubspec.yaml`).
-- Dependencias: `bloc`, `flutter_bloc` y `equatable`.
+- Dependencias: `bloc`, `flutter_bloc`, `equatable`, `http`,
+  `flutter_secure_storage` y el paquete local `reglas_brilliant`.
 - El proyecto tiene configuradas las plataformas **web** (`web/`) y
   **Windows** (`windows/`).
 
@@ -91,10 +92,10 @@ está ignorada por git).
 
 ## Los 4 mapas
 
-Cada mapa es un objeto `Nivel` (en `lib/juego.dart`) con:
+Cada mapa es un objeto `Nivel` (en el paquete `reglas_brilliant`, archivo
+`paquetes/reglas_brilliant/lib/src/mapas.dart`) con:
 
-- `layout`: la grilla de 7x7 con el tipo (color) de cada casilla, definida en
-  `lib/tablero_layout.dart`;
+- `layout`: la grilla de 7x7 con el tipo (color) de cada casilla;
 - `estrellas`: las 6 casillas con estrella, en orden de lectura;
 - `zonaUnica`: los colores que forman **una sola zona** aunque sus casillas
   estén separadas;
@@ -118,6 +119,19 @@ partir de estos datos; nada se escribe a mano por mapa.
 
 ## Estructura del proyecto
 
+| Carpeta | Qué tiene |
+|---|---|
+| `lib/`, `test/` | La app Flutter y sus pruebas. |
+| `paquetes/reglas_brilliant/` | Las reglas del juego en **Dart puro** (sin Flutter): tipos de zona y su regla de colocación, los 4 mapas, el tablero de un jugador con sus jugadas posibles, el puntaje por orden de llenado y la validación de los números iniciales. La app y el servidor lo usan por ruta (`path:`), así que los dos aplican exactamente las mismas reglas. |
+| `servidor/` | Servidor en Dart: cuentas y multijugador por WebSocket. Ver [`servidor/README.md`](servidor/README.md). |
+
+Pruebas del paquete de reglas, desde su carpeta:
+
+```bash
+dart analyze
+dart test
+```
+
 ### `lib/`
 
 | Archivo | Para qué sirve |
@@ -130,10 +144,8 @@ partir de estos datos; nada se escribe a mano por mapa.
 | `login_screen.dart` | Pantalla de inicio de sesión. |
 | `registro_screen.dart` | Pantalla de registro. |
 | `buscar_partida_screen.dart` | Selección de mapa y botón para empezar. |
-| `tipo.dart` | Los tipos de zona (colores): color, regla escrita y regla de colocación (`esPosibleAgregar`). |
-| `tablero_layout.dart` | Layouts y estrellas de los 4 mapas. |
-| `juego.dart` | Modelo del juego: `ZonaDef`, `EstructuraTablero`, `Nivel`, los 4 mapas y `Juego` (el tablero de un jugador y sus jugadas posibles). |
-| `juego_cubit.dart` | Estado y lógica de la partida: dados, ancla, colocación, saltar turno, orden de llenado, puntos, evento `ZonaCompletada` e historial. |
+| `tipo.dart` | El **color** de cada tipo de zona (lo único de los tipos que es solo de la app). Reexporta el paquete `reglas_brilliant`. |
+| `juego_cubit.dart` | Estado y lógica de la partida: dados, ancla, colocación, saltar turno, orden de llenado, puntos (calculados con el paquete), evento `ZonaCompletada` e historial. |
 | `movimiento_registrado.dart` | Un movimiento del historial y su texto legible. |
 | `numeros_iniciales_cubit.dart` | Estado de los números iniciales y su validación (repetidos y regla de la zona). |
 | `numeros_iniciales_screen.dart` | Pantalla de números iniciales. |
@@ -145,8 +157,8 @@ partir de estos datos; nada se escribe a mano por mapa.
 
 Cada archivo prueba una parte de `lib/`:
 
-- **Modelos y cubits:** `tipo_test`, `nivel_test`, `tablero_layout_test`
-  (mapa 1), `juego_test`, `juego_cubit_test`, `juego_mapas_test`,
+- **Modelos y cubits:** `colores_tipo_test`, `juego_test`, `juego_cubit_test`,
+  `juego_mapas_test`,
   `numeros_iniciales_cubit_test`, `zona_completada_test`, `historial_test`,
   `auth_test`, `validaciones_test`, y los del modelo anterior `tablero_test`,
   `zona_test` y `tablero_cubit_test`.
@@ -160,16 +172,19 @@ Cada archivo prueba una parte de `lib/`:
 La mayoría de las pruebas de pantalla comprueban que no haya desbordes en
 320x568, 360x640 y 411x891.
 
+Las pruebas de las reglas (tipos, mapas, tablero de un jugador, puntaje y
+números iniciales) están en `paquetes/reglas_brilliant/test/`.
+
 ## Estado actual
 
-- Se juega en **modo individual**. La lógica de la partida (`JuegoCubit`) ya
-  admite varios jugadores, pero la app todavía no ofrece cómo elegirlos.
-- Las **cuentas viven solo en memoria** (`InMemoryAuthRepository`): se pierden
-  al cerrar la app y la contraseña no se cifra. Es solo para desarrollo.
+- Se juega en **modo individual** en la app. La lógica de la partida
+  (`JuegoCubit`) ya admite varios jugadores.
+- Las cuentas están en el **servidor** (`ApiAuthRepository`); la versión en
+  memoria queda solo para las pruebas.
+- El **servidor multijugador** (salas, partidas por turnos, reconexión) está
+  listo y documentado en [`servidor/README.md`](servidor/README.md).
 
 ## Pendiente
 
-- Servidor con autenticación segura, que reemplace a `InMemoryAuthRepository`
-  detrás de la interfaz `AuthRepository`.
-- Crear y borrar cuenta en el servidor.
-- Modo en línea con varios jugadores.
+- Cliente multijugador en la app: lobby, partida en línea contra el servidor y
+  la confirmación antes de rendirse.
