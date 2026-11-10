@@ -1,0 +1,3 @@
+# Es un paquete: el pubspec.lock lo fija quien lo usa (la app y el servidor).
+pubspec.lock
+.dart_tool/

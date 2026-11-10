@@ -3,24 +3,32 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'config.dart';
 import 'cors.dart';
+import 'multijugador/multijugador.dart';
+import 'multijugador/ruta_ws.dart';
 import 'respuestas.dart';
 import 'rutas_cuentas.dart';
 import 'servicios.dart';
 
 /// Arma el handler completo del servidor. [registrar] recibe las líneas de
-/// log (por defecto no se registra nada, útil en las pruebas).
+/// log (por defecto no se registra nada, útil en las pruebas). Sin
+/// [multijugador] no existe la ruta /ws.
 Handler crearAplicacion(
   Config config,
   Servicios servicios, {
   void Function(String)? registrar,
+  Multijugador? multijugador,
 }) {
-  final rutas =
-      Router(notFoundHandler: (_) => respuestaError(404, 'Ruta no encontrada'))
-        ..get('/salud', (Request _) => respuestaJson(200, {'estado': 'ok'}))
-        ..post('/registro', (Request p) => rutaRegistro(p, servicios))
-        ..post('/sesion', (Request p) => rutaSesion(p, servicios))
-        ..get('/cuenta', (Request p) => rutaCuenta(p, servicios))
-        ..delete('/cuenta', (Request p) => rutaBorrarCuenta(p, servicios));
+  final rutas = Router(
+    notFoundHandler: (_) => respuestaError(404, 'Ruta no encontrada'),
+  )..get('/salud', (Request _) => respuestaJson(200, {'estado': 'ok'}));
+  if (multijugador != null) {
+    rutas.get('/ws', rutaWebSocket(config, multijugador));
+  }
+  rutas
+    ..post('/registro', (Request p) => rutaRegistro(p, servicios))
+    ..post('/sesion', (Request p) => rutaSesion(p, servicios))
+    ..get('/cuenta', (Request p) => rutaCuenta(p, servicios))
+    ..delete('/cuenta', (Request p) => rutaBorrarCuenta(p, servicios));
 
   var pipeline = const Pipeline();
   if (registrar != null) {

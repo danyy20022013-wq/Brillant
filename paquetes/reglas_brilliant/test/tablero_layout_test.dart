@@ -1,7 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
-import 'package:juego_brilliant/tablero_layout.dart';
-import 'package:juego_brilliant/tipo.dart';
+import 'package:test/test.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
 void main() {
   test('el tablero es de 7x7', () {
@@ -67,7 +65,9 @@ void main() {
     expect(
       () => EstructuraTablero.desdeLayout(
         layoutTableroNivel1,
-        puntos: const {Tipo.rojo: [6, 4, 2]},
+        puntos: const {
+          Tipo.rojo: [6, 4, 2],
+        },
       ),
       throwsA(
         isA<ArgumentError>().having(

@@ -1,11 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
-import 'package:juego_brilliant/tipo.dart';
+import 'package:test/test.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
 /// Nombre y cantidad de casillas de cada zona, en orden de aparición.
 Map<String, int> _tamanos(Nivel mapa) => {
-      for (final z in mapa.estructura.zonas) z.nombre: z.celdas.length,
-    };
+  for (final z in mapa.estructura.zonas) z.nombre: z.celdas.length,
+};
 
 /// Revisa nombres, tamaños y también el orden de aparición (fila por fila).
 void _verificarZonas(Nivel mapa, Map<String, int> esperado) {
@@ -49,23 +48,25 @@ void main() {
         expect(casillas, 49);
       });
 
-      test('las 6 estrellas van en orden de lectura y en 6 zonas distintas',
-          () {
-        expect(mapa.estrellas.length, 6);
-        for (var i = 1; i < 6; i++) {
-          final a = mapa.estrellas[i - 1];
-          final b = mapa.estrellas[i];
-          expect(a.fila * 7 + a.columna, lessThan(b.fila * 7 + b.columna));
-        }
-        final zonas = {
-          for (final p in mapa.estrellas)
-            mapa.estructura.indiceZona[p.fila][p.columna],
-        };
-        expect(zonas.length, 6);
-        for (final p in mapa.estrellas) {
-          expect(mapa.esEstrella(p.fila, p.columna), isTrue);
-        }
-      });
+      test(
+        'las 6 estrellas van en orden de lectura y en 6 zonas distintas',
+        () {
+          expect(mapa.estrellas.length, 6);
+          for (var i = 1; i < 6; i++) {
+            final a = mapa.estrellas[i - 1];
+            final b = mapa.estrellas[i];
+            expect(a.fila * 7 + a.columna, lessThan(b.fila * 7 + b.columna));
+          }
+          final zonas = {
+            for (final p in mapa.estrellas)
+              mapa.estructura.indiceZona[p.fila][p.columna],
+          };
+          expect(zonas.length, 6);
+          for (final p in mapa.estrellas) {
+            expect(mapa.esEstrella(p.fila, p.columna), isTrue);
+          }
+        },
+      );
 
       test('cada zona tiene 3 valores de puntos', () {
         for (final z in mapa.estructura.zonas) {
@@ -118,8 +119,13 @@ void main() {
     });
 
     test('amarillo y blanco separados forman una sola zona', () {
-      expect(_zona(nivel2, 'Amarillo').celdas.toSet(),
-          {(1, 1), (1, 5), (3, 3), (5, 1), (5, 5)});
+      expect(_zona(nivel2, 'Amarillo').celdas.toSet(), {
+        (1, 1),
+        (1, 5),
+        (3, 3),
+        (5, 1),
+        (5, 5),
+      });
       expect(_zona(nivel2, 'Blanco').celdas.toSet(), {(0, 3), (6, 3)});
     });
 
@@ -150,8 +156,13 @@ void main() {
     });
 
     test('el blanco separado es una zona; los amarillos son dos', () {
-      expect(_zona(nivel3, 'Blanco').celdas.toSet(),
-          {(0, 3), (1, 0), (1, 6), (3, 3), (6, 3)});
+      expect(_zona(nivel3, 'Blanco').celdas.toSet(), {
+        (0, 3),
+        (1, 0),
+        (1, 6),
+        (3, 3),
+        (6, 3),
+      });
       expect(_zonaEn(nivel3, 0, 0).nombre, 'Amarillo 1');
       expect(_zonaEn(nivel3, 0, 6).nombre, 'Amarillo 2');
       expect(_zonaEn(nivel3, 0, 2).nombre, 'Morado 1'); // la de arriba
@@ -188,12 +199,28 @@ void main() {
     });
 
     test('amarillo, azul y verde separados son una zona cada uno', () {
-      expect(_zona(nivel4, 'Amarillo').celdas.toSet(),
-          {(1, 0), (1, 6), (3, 0), (3, 6), (5, 0), (5, 6)});
-      expect(_zona(nivel4, 'Azul').celdas.toSet(),
-          {(1, 2), (1, 4), (3, 2), (3, 4), (5, 2), (5, 4)});
-      expect(_zona(nivel4, 'Verde').celdas.toSet(),
-          {(1, 3), (3, 1), (3, 5), (5, 3)});
+      expect(_zona(nivel4, 'Amarillo').celdas.toSet(), {
+        (1, 0),
+        (1, 6),
+        (3, 0),
+        (3, 6),
+        (5, 0),
+        (5, 6),
+      });
+      expect(_zona(nivel4, 'Azul').celdas.toSet(), {
+        (1, 2),
+        (1, 4),
+        (3, 2),
+        (3, 4),
+        (5, 2),
+        (5, 4),
+      });
+      expect(_zona(nivel4, 'Verde').celdas.toSet(), {
+        (1, 3),
+        (3, 1),
+        (3, 5),
+        (5, 3),
+      });
     });
 
     test('las 4 zonas rojas son distintas', () {

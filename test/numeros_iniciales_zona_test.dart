@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
+import 'package:juego_brilliant/tipo.dart';
 import 'package:juego_brilliant/numeros_iniciales_screen.dart';
 
 // Mapa 4, estrellas en orden de lectura: 0 = naranja 4-6 (0,4),

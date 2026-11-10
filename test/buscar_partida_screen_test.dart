@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juego_brilliant/auth_repository.dart';
 import 'package:juego_brilliant/buscar_partida_screen.dart';
-import 'package:juego_brilliant/juego.dart';
+import 'package:juego_brilliant/tipo.dart';
 
 const _usuario = Usuario(nombre: 'dany', correo: 'dany@correo.com');
 const _dorado = Color(0xFFFFD166);

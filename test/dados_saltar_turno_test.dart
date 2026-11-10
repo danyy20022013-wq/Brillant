@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
+import 'package:juego_brilliant/tipo.dart';
 import 'package:juego_brilliant/juego_cubit.dart';
 import 'package:juego_brilliant/juego_screen.dart';
-import 'package:juego_brilliant/tablero_layout.dart';
-import 'package:juego_brilliant/tipo.dart';
 
 const _numeros = [1, 2, 3, 4, 5, 6];
 

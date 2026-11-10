@@ -65,7 +65,15 @@ class Config {
   /// y tenga al menos 32 bytes; además Tokens vuelve a comprobarlo.
   final String jwtSecreto;
 
+  /// Segundos de cada turno del multijugador.
+  final int segundosTurno;
+
+  /// Segundos que tiene un jugador caído para volver a su partida.
+  final int segundosReconexion;
+
   const Config({
+    this.segundosTurno = segundosPorDefecto,
+    this.segundosReconexion = segundosPorDefecto,
     this.host = '127.0.0.1',
     this.puerto = 8080,
     this.produccion = false,
@@ -84,6 +92,23 @@ class Config {
   /// pruebas; más de 15 tarda varios segundos por inicio de sesión.
   static const costoBcryptMinimo = 4;
   static const costoBcryptMaximo = 15;
+
+  /// Turno y plazo de reconexión del multijugador.
+  static const segundosPorDefecto = 60;
+  static const segundosMinimos = 10;
+  static const segundosMaximos = 600;
+
+  static int _segundos(Map<String, String> variables, String clave) {
+    final texto = _texto(variables, clave) ?? '$segundosPorDefecto';
+    final valor = int.tryParse(texto);
+    if (valor == null || valor < segundosMinimos || valor > segundosMaximos) {
+      throw ConfigException(
+        '$clave debe ser un número de segundos entre $segundosMinimos y '
+        '$segundosMaximos (llegó "$texto").',
+      );
+    }
+    return valor;
+  }
 
   /// Crea la configuración desde las variables (ya combinadas).
   /// Lanza [ConfigException] con una explicación si algo no es válido.
@@ -160,6 +185,8 @@ class Config {
       rutaBaseDatos: _texto(variables, 'RUTA_BASE_DATOS') ?? 'brilliant.db',
       costoBcrypt: costo,
       jwtSecreto: secreto,
+      segundosTurno: _segundos(variables, 'SEGUNDOS_TURNO'),
+      segundosReconexion: _segundos(variables, 'SEGUNDOS_RECONEXION'),
     );
   }
 

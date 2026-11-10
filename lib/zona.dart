@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'tipo.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
 /// Un bloque del tablero con su tipo, su capacidad y los números
 /// que ya se colocaron (en orden).

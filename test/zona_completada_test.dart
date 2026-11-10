@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/juego.dart';
-import 'package:juego_brilliant/juego_cubit.dart';
 import 'package:juego_brilliant/tipo.dart';
+import 'package:juego_brilliant/juego_cubit.dart';
 
 const _iniciales = [1, 2, 3, 4, 5, 6];
 

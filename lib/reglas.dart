@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'juego.dart';
 import 'tipo.dart';
 
 const _panel = Color(0xFF1F2244);

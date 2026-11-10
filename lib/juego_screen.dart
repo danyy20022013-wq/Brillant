@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'juego.dart';
 import 'juego_cubit.dart';
 import 'reglas.dart';
 import 'tipo.dart';

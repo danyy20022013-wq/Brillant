@@ -1,9 +1,8 @@
 import 'package:bloc/bloc.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
-import 'juego.dart';
-
-/// Cuántas casillas con estrella hay (una por zona inicial).
-const cantidadNumerosIniciales = 6;
+export 'package:reglas_brilliant/reglas_brilliant.dart'
+    show cantidadNumerosIniciales;
 
 class NumerosInicialesEstado {
   final List<int?> valores;
@@ -46,12 +45,7 @@ class NumerosInicialesEstado {
   /// Usa la misma regla que la partida (esPosibleAgregar del tipo).
   bool esPosible(int indice, int valor) {
     if (nivel == null) return true;
-    final z = _zonaDe(indice);
-    final otros = <int>[
-      for (var i = 0; i < valores.length; i++)
-        if (i != indice && valores[i] != null && _zonaDe(i) == z) valores[i]!,
-    ];
-    return nivel!.estructura.zonas[z].tipo.esPosibleAgregar(otros, valor);
+    return esPosibleNumeroInicial(nivel!, valores, indice, valor);
   }
 
   /// true si la casilla [indice] tiene un número que rompe su regla.

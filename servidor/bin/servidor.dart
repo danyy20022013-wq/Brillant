@@ -26,7 +26,19 @@ Future<void> main() async {
   // Prepara el hash de relleno antes de recibir el primer inicio de sesión.
   await servicios.contrasenas.hashDeRelleno;
 
-  final handler = crearAplicacion(config, servicios, registrar: _log);
+  final multijugador = Multijugador(
+    servicios: servicios,
+    opciones: OpcionesMultijugador(
+      turno: Duration(seconds: config.segundosTurno),
+      reconexion: Duration(seconds: config.segundosReconexion),
+    ),
+  );
+  final handler = crearAplicacion(
+    config,
+    servicios,
+    registrar: _log,
+    multijugador: multijugador,
+  );
   final servidor = await shelf_io.serve(handler, config.host, config.puerto);
   _log(
     'Servidor de Brilliant escuchando en '
@@ -38,6 +50,7 @@ Future<void> main() async {
   late final StreamSubscription<ProcessSignal> senal;
   senal = ProcessSignal.sigint.watch().listen((_) async {
     _log('Cerrando el servidor…');
+    multijugador.cerrar();
     await servidor.close();
     usuarios.cerrar();
     await senal.cancel();

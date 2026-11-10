@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:juego_brilliant/tipo.dart';
+import 'package:test/test.dart';
+import 'package:reglas_brilliant/reglas_brilliant.dart';
 
 /// Tabla de puntos que cada tipo trae para el modelo anterior del tablero
 /// (Tablero.puntajeTotal). La partida actual usa los puntos de cada mapa.

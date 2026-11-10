@@ -1,0 +1,10 @@
+name: reglas_brilliant
+description: Reglas de Brilliant en Dart puro (tipos de zona, mapas, tablero y puntaje), compartidas por la app y el servidor.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  test: ^1.33.0

@@ -99,4 +99,44 @@ VACIA=
       );
     });
   });
+
+  group('Tiempos del multijugador', () {
+    test('por defecto 60 s de turno y 60 s para reconectarse', () {
+      final config = Config.desde(variablesMinimas);
+      expect(config.segundosTurno, 60);
+      expect(config.segundosReconexion, 60);
+    });
+
+    test('se pueden cambiar', () {
+      final config = Config.desde({
+        ...variablesMinimas,
+        'SEGUNDOS_TURNO': '45',
+        'SEGUNDOS_RECONEXION': ' 120 ',
+      });
+      expect(config.segundosTurno, 45);
+      expect(config.segundosReconexion, 120);
+    });
+
+    for (final valor in ['0', '9', '601', 'mucho', '-5']) {
+      test('rechaza SEGUNDOS_TURNO="$valor"', () {
+        expect(
+          () => Config.desde({...variablesMinimas, 'SEGUNDOS_TURNO': valor}),
+          throwsA(
+            isA<ConfigException>().having(
+              (e) => e.mensaje,
+              'mensaje',
+              contains('SEGUNDOS_TURNO debe ser un número de segundos'),
+            ),
+          ),
+        );
+      });
+    }
+
+    test('rechaza SEGUNDOS_RECONEXION fuera de rango', () {
+      expect(
+        () => Config.desde({...variablesMinimas, 'SEGUNDOS_RECONEXION': '5'}),
+        throwsA(isA<ConfigException>()),
+      );
+    });
+  });
 }
