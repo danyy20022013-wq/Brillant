@@ -19,12 +19,21 @@ class NumerosInicialesScreen extends StatelessWidget {
   /// Mapa que se va a jugar (por defecto el 1).
   final Nivel? nivel;
 
+  /// Multijugador: en lugar de empezar la partida, entrega los números
+  /// (los manda al servidor). No tiene botón de volver.
+  final void Function(List<int> numeros)? alConfirmar;
+
+  /// Se muestra arriba del tablero (por ejemplo, el temporizador).
+  final Widget? encabezado;
+
   const NumerosInicialesScreen({
     super.key,
     this.jugador = 1,
     this.totalJugadores = 1,
     this.anteriores = const [],
     this.nivel,
+    this.alConfirmar,
+    this.encabezado,
   });
 
   @override
@@ -37,6 +46,8 @@ class NumerosInicialesScreen extends StatelessWidget {
         totalJugadores: totalJugadores,
         anteriores: anteriores,
         mapa: mapa,
+        alConfirmar: alConfirmar,
+        encabezado: encabezado,
       ),
     );
   }
@@ -47,12 +58,16 @@ class _Vista extends StatelessWidget {
   final int totalJugadores;
   final List<List<int>> anteriores;
   final Nivel mapa;
+  final void Function(List<int> numeros)? alConfirmar;
+  final Widget? encabezado;
 
   const _Vista({
     required this.jugador,
     required this.totalJugadores,
     required this.anteriores,
     required this.mapa,
+    this.alConfirmar,
+    this.encabezado,
   });
 
   @override
@@ -71,14 +86,18 @@ class _Vista extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            tooltip: 'Volver',
-                            icon: const Icon(
-                              Icons.arrow_back_rounded,
-                              color: Colors.white70,
-                            ),
-                          ),
+                          if (alConfirmar == null)
+                            IconButton(
+                              onPressed: () =>
+                                  Navigator.of(context).maybePop(),
+                              tooltip: 'Volver',
+                              icon: const Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white70,
+                              ),
+                            )
+                          else
+                            const SizedBox(width: 48),
                           const Expanded(
                             child: Center(
                               child: Text(
@@ -118,6 +137,7 @@ class _Vista extends StatelessWidget {
                           fontSize: 13,
                         ),
                       ),
+                      ?encabezado,
                       const SizedBox(height: 6),
                       const Text(
                         'Toca una ⭐ y elige su número (1 al 6, sin repetir)',
@@ -156,7 +176,11 @@ class _Vista extends StatelessWidget {
                           onPressed: estado.esValido
                               ? () => _iniciar(context, estado)
                               : null,
-                          child: const Text('Inicio'),
+                          child: Text(
+                            alConfirmar == null
+                                ? 'Inicio'
+                                : 'Enviar mis números',
+                          ),
                         ),
                       ),
                     ],
@@ -172,6 +196,10 @@ class _Vista extends StatelessWidget {
 
   void _iniciar(BuildContext context, NumerosInicialesEstado estado) {
     final iniciales = estado.valores.whereType<int>().toList();
+    if (alConfirmar case final confirmar?) {
+      confirmar(iniciales);
+      return;
+    }
     final todos = [...anteriores, iniciales];
     final navigator = Navigator.of(context);
 

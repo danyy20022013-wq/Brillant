@@ -73,6 +73,14 @@ class ApiAuthRepository implements AuthRepository {
   /// Hay un token en esta sesión.
   bool get tieneToken => _token != null;
 
+  /// Dirección del servidor (el multijugador arma con ella la del
+  /// WebSocket).
+  Uri get urlBase => _base;
+
+  /// Token de la sesión actual, para autenticar el WebSocket del
+  /// multijugador. Nunca se escribe en logs.
+  String? get tokenActual => _token;
+
   Future<void> _guardarToken(String token) async {
     _token = token;
     await _almacen.guardarToken(token);

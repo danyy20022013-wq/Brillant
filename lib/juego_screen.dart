@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'juego_cubit.dart';
+import 'piezas_juego.dart';
 import 'reglas.dart';
 import 'tipo.dart';
+
+export 'piezas_juego.dart' show duracionAvisoZona, duracionGiroDados;
 
 const _fondo = Color(0xFF14162B);
 const _panel = Color(0xFF1F2244);
@@ -29,55 +32,16 @@ class JuegoScreen extends StatelessWidget {
   }
 }
 
-/// Duración del giro de los dados. Solo es visual: el valor lo decide el cubit.
-const duracionGiroDados = Duration(milliseconds: 500);
-
-/// Cuánto se queda en pantalla el aviso de zona completada.
-const duracionAvisoZona = Duration(seconds: 3);
-
 /// Muestra el aviso flotante de [zona] completada. Va sobre el panel de
 /// zonas (no tapa el tablero, los dados ni los botones) y se va solo.
 void mostrarAvisoZona(BuildContext context, ZonaCompletada zona) {
-  final titulo = zona.puntua ? '+${zona.puntos} puntos' : 'Ya no puntúa';
-  final detalle = '${zona.nombre} completada';
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      key: Key('aviso-zona-${zona.turno}'),
-      behavior: SnackBarBehavior.floating,
-      duration: duracionAvisoZona,
-      backgroundColor: _panel,
-      elevation: 6,
-      // Queda justo encima de los botones de abajo, sobre el panel de zonas,
-      // y es bajo para no tapar el tablero en celulares chicos.
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 66),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: zona.tipo.color, width: 3),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            titulo,
-            style: TextStyle(
-              color: zona.puntua ? _dorado : Colors.white70,
-              fontSize: zona.puntua ? 22 : 18,
-              fontWeight: FontWeight.w800,
-              height: 1.1,
-            ),
-          ),
-          Text(
-            detalle,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ],
-      ),
-    ),
+  mostrarAvisoFlotante(
+    context,
+    clave: Key('aviso-zona-${zona.turno}'),
+    titulo: zona.puntua ? '+${zona.puntos} puntos' : 'Ya no puntúa',
+    detalle: '${zona.nombre} completada',
+    color: zona.tipo.color,
+    destacado: zona.puntua,
   );
 }
 
@@ -479,9 +443,9 @@ class _ZonaDados extends StatelessWidget {
       builder: (context, _) {
         final girando = giro.isAnimating;
         final cara = girando
-            ? ((giro.value * 12).floor() + indice * 3) % 6 + 1
+            ? caraEnGiro(giro.value, indice)
             : valor;
-        return _Dado(
+        return CaraDado(
           key: Key('dado-$indice'),
           valor: cara,
           angulo: girando ? giro.value * 4 * pi : 0,
@@ -534,132 +498,7 @@ class _ZonaDados extends StatelessWidget {
   }
 }
 
-class _Dado extends StatelessWidget {
-  final int? valor;
-  final String etiqueta;
-  final bool esAncla;
-  final VoidCallback? onTap;
-
-  /// Giro del dado en radianes (0 cuando está quieto).
-  final double angulo;
-
-  const _Dado({
-    super.key,
-    required this.valor,
-    required this.etiqueta,
-    required this.esAncla,
-    required this.onTap,
-    this.angulo = 0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Transform.rotate(
-            angle: angulo,
-            child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: 54,
-            height: 54,
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: valor == null ? 0.25 : 1),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: esAncla ? _dorado : Colors.transparent,
-                width: 3,
-              ),
-              boxShadow: esAncla
-                  ? [
-                      BoxShadow(
-                        color: _dorado.withValues(alpha: 0.6),
-                        blurRadius: 12,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: valor == null
-                ? const Center(
-                    child: Text(
-                      '?',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                : _Puntos(valor: valor!),
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          etiqueta,
-          style: TextStyle(
-            color: esAncla ? _dorado : Colors.white70,
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Dibuja los puntitos de la cara del dado en una grilla de 3x3.
-class _Puntos extends StatelessWidget {
-  final int valor;
-
-  const _Puntos({required this.valor});
-
-  static const Map<int, List<int>> _caras = {
-    1: [4],
-    2: [0, 8],
-    3: [0, 4, 8],
-    4: [0, 2, 6, 8],
-    5: [0, 2, 4, 6, 8],
-    6: [0, 2, 3, 5, 6, 8],
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final activos = _caras[valor] ?? const <int>[];
-    return Column(
-      children: [
-        for (var fila = 0; fila < 3; fila++)
-          Expanded(
-            child: Row(
-              children: [
-                for (var col = 0; col < 3; col++)
-                  Expanded(
-                    child: Center(
-                      child: activos.contains(fila * 3 + col)
-                          ? Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: _fondo,
-                                shape: BoxShape.circle,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// El tablero ocupa el espacio que sobra, como un cuadrado.
+/// El tablero del jugador del turno, con las casillas iluminadas.
 class _TableroJuego extends StatelessWidget {
   final JuegoEstado estado;
 
@@ -670,147 +509,13 @@ class _TableroJuego extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resaltadas =
-        bloqueado ? const <(int, int)>{} : estado.jugadasResaltadas;
-    final ancla = estado.ancla;
-    final tablero = estado.juego.tablero;
-    final mapa = estado.nivel;
-    final layout = mapa.layout;
-
-    return LayoutBuilder(
-      builder: (context, c) {
-        final lado = max(0.0, min(c.maxWidth, c.maxHeight));
-        return Center(
-          child: SizedBox(
-            width: lado,
-            height: lado,
-            child: Column(
-              children: [
-                for (var f = 0; f < layout.length; f++)
-                  Expanded(
-                    child: Row(
-                      children: [
-                        for (var col = 0; col < layout[f].length; col++)
-                          Expanded(
-                            child: _CeldaJuego(
-                              key: Key('celda-$f-$col'),
-                              tipo: layout[f][col],
-                              valor: tablero[f][col],
-                              resaltada: resaltadas.contains((f, col)),
-                              esAncla:
-                                  ancla != null && tablero[f][col] == ancla,
-                              esSemilla: mapa.esEstrella(f, col),
-                              sugerido: estado.aColocar,
-                              onTap: resaltadas.contains((f, col))
-                                  ? () => context
-                                      .read<JuegoCubit>()
-                                      .colocar(f, col)
-                                  : null,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _CeldaJuego extends StatelessWidget {
-  final Tipo tipo;
-  final int? valor;
-  final bool resaltada;
-  final bool esAncla;
-  final bool esSemilla;
-  final int? sugerido;
-  final VoidCallback? onTap;
-
-  const _CeldaJuego({
-    super.key,
-    required this.tipo,
-    required this.valor,
-    required this.resaltada,
-    required this.esAncla,
-    required this.esSemilla,
-    required this.sugerido,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textoOscuro = tipo is TipoBlanco;
-
-    Widget? texto;
-    if (valor != null) {
-      texto = Text(
-        '$valor',
-        style: TextStyle(
-          color: textoOscuro ? Colors.black87 : Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-          shadows: textoOscuro
-              ? null
-              : const [Shadow(blurRadius: 2, color: Colors.black54)],
-        ),
-      );
-    } else if (resaltada && sugerido != null) {
-      texto = Text(
-        '$sugerido',
-        style: TextStyle(
-          color: textoOscuro ? Colors.black54 : Colors.white70,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(1.5),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: tipo.color,
-            borderRadius: BorderRadius.circular(8),
-            border: resaltada
-                ? Border.all(color: Colors.white, width: 2.5)
-                : esAncla
-                    ? Border.all(color: _dorado, width: 2.5)
-                    : null,
-            boxShadow: resaltada
-                ? [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Stack(
-            children: [
-              if (texto != null)
-                Center(
-                  child: FittedBox(
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: texto,
-                    ),
-                  ),
-                ),
-              if (esSemilla)
-                const Positioned(
-                  right: 1,
-                  bottom: 1,
-                  child: Icon(Icons.star_rounded, color: _dorado, size: 10),
-                ),
-            ],
-          ),
-        ),
-      ),
+    return TableroPartida(
+      mapa: estado.nivel,
+      tablero: estado.juego.tablero,
+      resaltadas: bloqueado ? const {} : estado.jugadasResaltadas,
+      ancla: estado.ancla,
+      sugerido: estado.aColocar,
+      alTocar: (f, col) => context.read<JuegoCubit>().colocar(f, col),
     );
   }
 }
@@ -823,93 +528,11 @@ class _PanelZonas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final zonas = estado.nivel.estructura.zonas;
-
-    return LayoutBuilder(
-      builder: (context, c) {
-        const espacio = 6.0;
-        final ancho = (c.maxWidth - espacio * 4 - 1) / 5;
-        return Wrap(
-          spacing: espacio,
-          runSpacing: espacio,
-          children: [
-            for (var i = 0; i < zonas.length; i++)
-              SizedBox(
-                width: ancho,
-                height: 40,
-                child: _ChipZona(
-                  zona: zonas[i],
-                  orden: estado.ordenZonas[i],
-                  individual: estado.esIndividual,
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _ChipZona extends StatelessWidget {
-  final ZonaDef zona;
-  final List<int> orden; // jugadores que la completaron, en orden
-  final bool individual;
-
-  const _ChipZona({
-    required this.zona,
-    required this.orden,
-    required this.individual,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tabla = zona.puntos;
-    final proximo = orden.length < tabla.length ? tabla[orden.length] : 0;
-    final oscuro = zona.tipo is TipoAmarillo || zona.tipo is TipoBlanco;
-    final color = oscuro ? Colors.black87 : Colors.white;
-
-    final String detalle;
-    if (orden.isEmpty) {
-      detalle = '+$proximo';
-    } else if (individual) {
-      detalle = '✓';
-    } else {
-      detalle = [for (final p in orden) 'J${p + 1}'].join('›');
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-      decoration: BoxDecoration(
-        color: zona.tipo.color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              zona.nombre,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              detalle,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return PanelZonas(
+      mapa: estado.nivel,
+      ordenZonas: estado.ordenZonas,
+      individual: estado.esIndividual,
+      etiqueta: (p) => 'J${p + 1}',
     );
   }
 }

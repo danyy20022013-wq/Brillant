@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'auth_repository.dart';
 import 'eliminar_cuenta_dialogo.dart';
+import 'multijugador/dialogos_sala.dart';
+import 'multijugador/multijugador_cubit.dart';
+import 'multijugador/pantalla_sala.dart';
 import 'numeros_iniciales_screen.dart';
+import 'piezas_juego.dart';
 import 'reglas.dart';
 import 'tipo.dart';
 
@@ -18,11 +22,16 @@ class BuscarPartidaScreen extends StatefulWidget {
   /// "Cerrar sesión").
   final EliminarCuenta? alEliminarCuenta;
 
+  /// Si se indica, aparecen "Crear sala" y "Unirme con código" para jugar
+  /// en línea.
+  final AbrirSala? abrirSala;
+
   const BuscarPartidaScreen({
     super.key,
     required this.usuario,
     required this.alCerrarSesion,
     this.alEliminarCuenta,
+    this.abrirSala,
   });
 
   @override
@@ -36,6 +45,26 @@ class _BuscarPartidaScreenState extends State<BuscarPartidaScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => NumerosInicialesScreen(nivel: _mapa)),
     );
+  }
+
+  void _abrir(AbrirSala abrir, AccionInicial accion) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PantallaSala(crearCubit: () => abrir(accion)),
+      ),
+    );
+  }
+
+  Future<void> _crearSala(AbrirSala abrir) async {
+    final maximo = await mostrarDialogoCrearSala(context, _mapa);
+    if (maximo == null || !mounted) return;
+    _abrir(abrir, AccionInicial.crear(mapa: _mapa.numero, maximo: maximo));
+  }
+
+  Future<void> _unirse(AbrirSala abrir) async {
+    final codigo = await mostrarDialogoUnirse(context);
+    if (codigo == null || !mounted) return;
+    _abrir(abrir, AccionInicial.unirse(codigo));
   }
 
   @override
@@ -132,12 +161,44 @@ class _BuscarPartidaScreenState extends State<BuscarPartidaScreen> {
                       child: const Text('Buscar partida'),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Por ahora juegas solo. El modo en línea llegará pronto.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
-                  ),
+                  const SizedBox(height: 8),
+                  if (widget.abrirSala case final abrir?)
+                    SizedBox(
+                      height: 44,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              key: const Key('boton-crear-sala'),
+                              onPressed: () => _crearSala(abrir),
+                              icon: const Icon(Icons.group_add_rounded, size: 18),
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Crear sala'),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              key: const Key('boton-unirse'),
+                              onPressed: () => _unirse(abrir),
+                              icon: const Icon(Icons.login_rounded, size: 18),
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Unirme con código'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    const Text(
+                      'Juego en línea no disponible sin servidor.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
                   if (widget.alEliminarCuenta case final eliminar?)
                     Center(
                       child: TextButton.icon(
@@ -197,7 +258,7 @@ class _TarjetaMapa extends StatelessWidget {
               child: Center(
                 child: AspectRatio(
                   aspectRatio: 1,
-                  child: _MiniTablero(mapa: mapa),
+                  child: MiniTablero(mapa: mapa),
                 ),
               ),
             ),
@@ -212,53 +273,6 @@ class _TarjetaMapa extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Vista previa del mapa; las estrellas se ven como puntos dorados.
-class _MiniTablero extends StatelessWidget {
-  final Nivel mapa;
-
-  const _MiniTablero({required this.mapa});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var f = 0; f < mapa.layout.length; f++)
-          Expanded(
-            child: Row(
-              children: [
-                for (var c = 0; c < mapa.layout[f].length; c++)
-                  Expanded(
-                    child: Container(
-                      key: Key('mini-${mapa.numero}-$f-$c'),
-                      margin: const EdgeInsets.all(0.8),
-                      decoration: BoxDecoration(
-                        color: mapa.layout[f][c].color,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: mapa.esEstrella(f, c)
-                          ? const Center(
-                              child: FractionallySizedBox(
-                                widthFactor: 0.45,
-                                heightFactor: 0.45,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: _dorado,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 }

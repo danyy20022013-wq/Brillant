@@ -46,7 +46,8 @@ zona. Llenar zonas da puntos según el orden en que se llenan.
 
 - Flutter con Dart 3.9 o superior (`sdk: ^3.9.0` en `pubspec.yaml`).
 - Dependencias: `bloc`, `flutter_bloc`, `equatable`, `http`,
-  `flutter_secure_storage` y el paquete local `reglas_brilliant`.
+  `flutter_secure_storage`, `web_socket_channel` (multijugador) y el paquete
+  local `reglas_brilliant`.
 - El proyecto tiene configuradas las plataformas **web** (`web/`) y
   **Windows** (`windows/`).
 
@@ -66,6 +67,75 @@ flutter test
 
 Para medir la cobertura: `flutter test --coverage` (genera `coverage/`, que
 está ignorada por git).
+
+### Prueba de integración del multijugador (lenta)
+
+`test/integracion_multijugador_test.dart` levanta el **servidor real** en un
+puerto libre, con una base de datos temporal y una clave generada solo para
+la prueba, y conecta dos clientes: crean la sala, se unen, se marcan listos,
+inician y juegan una jugada completa. Al terminar cierra el servidor y borra
+la base temporal.
+
+Tiene la etiqueta `integracion` y con `flutter test` normal aparece como
+omitida. Para correrla:
+
+```powershell
+# PowerShell (Windows)
+$env:BRILLIANT_INTEGRACION='1'; flutter test --tags integracion
+```
+
+```bash
+# bash
+BRILLIANT_INTEGRACION=1 flutter test --tags integracion
+```
+
+Usa el Dart que trae Flutter (`FLUTTER_ROOT`). El servidor necesita **Dart
+3.11 o superior**; si tu Flutter trae un Dart más viejo, indica otro con
+`BRILLIANT_DART` (por ejemplo `$env:BRILLIANT_DART='C:\ruta\a\dart.exe'`).
+Antes hay que haber hecho `dart pub get` en `servidor/`. Como no hay un
+`dart_test.yaml`, `flutter test` puede avisar que la etiqueta `integracion`
+no está declarada; es solo un aviso.
+
+## Jugar en línea con dos cuentas a la vez
+
+1. **Servidor:** en `servidor/`, copia `.env.example` como `.env`, genera la
+   clave (`dart run bin/generar_secreto.dart`) y arráncalo:
+
+   ```bash
+   cd servidor
+   dart run bin/servidor.dart
+   ```
+
+2. **Dos copias de la app.** Cada copia necesita su propia sesión. En la web
+   la sesión se guarda por navegador, así que dos pestañas del mismo Chrome
+   comparten la cuenta. Usa una de estas combinaciones:
+   - la app de **Windows** y la de **Chrome**:
+
+     ```bash
+     flutter run -d windows
+     flutter run -d chrome
+     ```
+
+   - o la web servida una vez y abierta en **dos navegadores distintos** (o en
+     una ventana normal y otra de incógnito):
+
+     ```bash
+     flutter run -d web-server --web-port 5000
+     # abre http://localhost:5000 en Chrome y en Edge (o en incógnito)
+     ```
+
+   Si el servidor no está en `http://localhost:8080`, agrega
+   `--dart-define=API_URL=http://tu-servidor:puerto`.
+3. **Crea dos cuentas** (una en cada copia).
+4. En la primera: elige el mapa, toca **Crear sala**, elige cuántos jugadores
+   y toca **Copiar** (o **Compartir**, que copia un texto de invitación).
+5. En la segunda: **Unirme con código** y escribe el código (se pasa a
+   mayúsculas solo y no acepta 0, O, 1, I ni L).
+6. Los dos tocan **Estoy listo** y el anfitrión toca **Iniciar partida**.
+
+Para probar la reconexión, cierra una de las copias en plena partida y vuelve
+a abrirla con la misma cuenta antes de 60 s: vuelve a su sala con el estado
+completo.
 
 ## Flujo de la app
 
@@ -89,6 +159,26 @@ está ignorada por git).
    - botón **?** con las reglas del mapa que se juega.
 
    Al terminar, *Nueva partida* vuelve a Buscar partida.
+
+**En línea** (desde Buscar partida, con *Crear sala* o *Unirme con código*):
+
+1. **Lobby:** código grande con *Copiar* y *Compartir*, miniatura del mapa,
+   jugadores con anfitrión, listo y desconectado, *Estoy listo*, *Iniciar
+   partida* (solo el anfitrión, con 2 o más y todos listos) y *Salir* con
+   confirmación.
+2. **Números iniciales:** la misma pantalla de siempre, con el tiempo que
+   queda. Al enviarlos se espera a los demás.
+3. **Partida:** la misma tabla, dados (con su animación) y panel de zonas. El
+   marcador muestra a todos con sus puntos, quién tiene el turno y si está
+   conectado, desconectado (con cuenta regresiva), rendido o si abandonó. Fuera
+   de turno los controles se desactivan. *Rendirse* explica que se queda
+   último. Si se corta la conexión aparece "Reconectando…" y al volver se
+   restaura todo.
+4. **Resultado:** posiciones, puntos, empates y quién se rindió o abandonó,
+   con *Volver al menú*.
+
+La app **no inventa estado**: solo manda intenciones (colocar, saltar,
+rendirse…) y muestra lo que difunde el servidor.
 
 ## Los 4 mapas
 
@@ -151,7 +241,20 @@ dart test
 | `numeros_iniciales_screen.dart` | Pantalla de números iniciales. |
 | `juego_screen.dart` | Pantalla de la partida. |
 | `reglas.dart` | Hoja de reglas, armada según el mapa. |
+| `piezas_juego.dart` | Piezas visuales que comparten el modo individual y el en línea: dado, tablero, chips de zona, miniatura del mapa y aviso flotante. |
 | `tablero.dart`, `zona.dart`, `tablero_cubit.dart` | Modelo anterior del tablero. La app ya no lo usa; se conserva con sus pruebas. |
+
+### `lib/multijugador/`
+
+| Archivo | Para qué sirve |
+|---|---|
+| `canal_ws.dart` | Interfaz del WebSocket (`CanalWs`) y la conexión real con `web_socket_channel`. |
+| `conexion_multijugador.dart` | Token en el primer mensaje, latidos, estados (conectando, conectado, reconectando, caído), reconexión con espera creciente (1, 2, 4, 8 y 15 s, con tope de intentos), ids de acción y avisos en español. |
+| `sala_remota.dart` | El estado de la sala tal como lo difunde el servidor. |
+| `multijugador_cubit.dart` | Manda las intenciones y guarda lo último que confirmó el servidor. |
+| `pantalla_sala.dart` | Elige la vista según la fase y muestra "Reconectando…" y los avisos. |
+| `vista_lobby.dart`, `vista_numeros_multi.dart`, `vista_partida_multi.dart`, `vista_resultado.dart` | Las vistas de cada fase (incluye el marcador). |
+| `dialogos_sala.dart`, `cuenta_regresiva.dart` | Diálogos de crear/unirse (con el formateador del código) y cuentas regresivas. |
 
 ### `test/`
 
@@ -168,6 +271,10 @@ Cada archivo prueba una parte de `lib/`:
   `aviso_zona_test`, `historial_pantalla_test` y `reglas_test`.
 - **Recorrido completo:** `widget_test` (registro, elegir mapa, números, jugar
   y volver a Buscar partida).
+- **Multijugador:** `multijugador_cubit_test` (conexión, reconexión, avisos e
+  ids) y `multijugador_pantallas_test` (lobby, partida, marcador, resultado y
+  los 3 tamaños), con un servidor falso (`ayuda_multijugador.dart`); y
+  `integracion_multijugador_test` contra el servidor real (ver arriba).
 
 La mayoría de las pruebas de pantalla comprueban que no haya desbordes en
 320x568, 360x640 y 411x891.
@@ -177,14 +284,37 @@ números iniciales) están en `paquetes/reglas_brilliant/test/`.
 
 ## Estado actual
 
-- Se juega en **modo individual** en la app. La lógica de la partida
-  (`JuegoCubit`) ya admite varios jugadores.
+- Se juega en **modo individual** (sin cambios) y **en línea** de 2 a 4
+  jugadores contra el servidor.
 - Las cuentas están en el **servidor** (`ApiAuthRepository`); la versión en
   memoria queda solo para las pruebas.
-- El **servidor multijugador** (salas, partidas por turnos, reconexión) está
-  listo y documentado en [`servidor/README.md`](servidor/README.md).
+- El protocolo del multijugador está en
+  [`servidor/README.md`](servidor/README.md).
+
+## Limitaciones (honestas)
+
+- **Las salas viven en memoria del servidor.** Si se reinicia, todas las
+  salas y partidas en curso se pierden; la app avisa "Esa sala ya no existe"
+  y vuelve al menú.
+- **Un solo servidor.** Salas, conexiones y límites están en la memoria de
+  un único proceso: no se puede repartir la carga entre varias instancias sin
+  un almacén compartido (por ejemplo Redis).
+- **El límite de intentos también está en memoria** (inicio de sesión,
+  registro y unirse a salas): se reinicia al reiniciar el servidor.
+- **WebSocket sin cifrar en desarrollo** (`ws://`). En un despliegue real
+  hay que ponerlo detrás de un proxy con HTTPS para usar `wss://`.
+- **"Compartir" copia la invitación** al portapapeles: la app no abre el menú
+  de compartir del sistema.
+- **Tirar los dados no le pide nada al servidor:** el servidor ya los tiró
+  al empezar el turno; el botón solo los muestra con la animación.
+- **La cuenta regresiva de un jugador desconectado es aproximada:** el
+  servidor no manda cuándo vence su plazo, así que la app cuenta 60 s (el
+  valor por defecto de `SEGUNDOS_RECONEXION`) desde que lo vio caerse.
+- **La sesión dura una hora** (el token): si vence en plena partida, la app
+  no puede reconectarse y pide volver a iniciar sesión.
 
 ## Pendiente
 
-- Cliente multijugador en la app: lobby, partida en línea contra el servidor y
-  la confirmación antes de rendirse.
+- Que el servidor mande cuándo vence el plazo de reconexión de cada jugador,
+  para que la cuenta regresiva sea exacta.
+- Compartir con el menú del sistema.
